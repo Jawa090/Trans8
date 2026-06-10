@@ -9,14 +9,27 @@ export const Route = createFileRoute("/access")({
   component: AccessPage,
 });
 
-type Role = "Super Admin" | "Broker" | "Port Agent" | "Custom Agent" | "Client";
+type Role =
+  // Networked Users
+  | "Logistic Broker"
+  | "Port Agent"
+  | "Custom Agent"
+  | "Logistics Partner"
+  // System Users
+  | "Driver"
+  | "Agent"
+  | "Admin"
+  | "Shipping";
 
 const ROLE_ACCESS: Record<Role, string[]> = {
-  "Super Admin":  ["All pages · full read/write"],
-  "Broker":       ["/bookings", "/broker-commission", "/load-request"],
-  "Port Agent":   ["/ports (assigned port only)", "/tracking"],
-  "Custom Agent": ["/tracking (customs steps only)"],
-  "Client":       ["/tracking (own shipments only)", "/load-request"],
+  "Logistic Broker":   ["Tender access", "Commission ledger", "/load-request"],
+  "Port Agent":        ["Port status update", "/ports visibility", "/tracking"],
+  "Custom Agent":      ["Customs clearance status", "/tracking customs steps"],
+  "Logistics Partner": ["Cargo response", "Status tracking", "/tracking"],
+  "Driver":            ["Trip execution", "Active route", "/tracking"],
+  "Agent":             ["Survey reports", "Warehouse status", "Insurance verification"],
+  "Admin":             ["Full dashboard settings", "App config", "User management"],
+  "Shipping":          ["Spot tenders", "Vessel logs", "Container loading"]
 };
 
 interface Row {
@@ -25,16 +38,16 @@ interface Row {
 }
 
 const SEED: Row[] = [
-  { id: "U-001", name: "Yusuf Karimi",   email: "yusuf@trans8.io",    role: "Super Admin",  assignment: "Global",                active: true,  lastLogin: "2 min ago",   initials: "YK" },
-  { id: "U-002", name: "Layla Hosseini", email: "layla@trans8.io",    role: "Broker",       assignment: "UAE · Dubai",           active: true,  lastLogin: "12 min ago",  initials: "LH" },
-  { id: "U-003", name: "Omar Al-Saud",   email: "omar@trans8.io",     role: "Port Agent",   assignment: "Jebel Ali",             active: true,  lastLogin: "1 hr ago",    initials: "OA" },
-  { id: "U-004", name: "Hassan Khan",    email: "hassan@trans8.io",   role: "Port Agent",   assignment: "Karachi Port",          active: true,  lastLogin: "3 hr ago",    initials: "HK" },
-  { id: "U-005", name: "Mehmet Yilmaz",  email: "mehmet@trans8.io",   role: "Custom Agent", assignment: "Istanbul Port",         active: true,  lastLogin: "Yesterday",   initials: "MY" },
-  { id: "U-006", name: "Reza Karimi",    email: "reza@trans8.io",     role: "Port Agent",   assignment: "Bandar Abbas",          active: true,  lastLogin: "5 hr ago",    initials: "RK" },
-  { id: "U-007", name: "Nadia Mansouri", email: "nadia@trans8.io",    role: "Client",       assignment: "Aurora Trading LLC",    active: true,  lastLogin: "2 days ago",  initials: "NM" },
-  { id: "U-008", name: "Ivan Volkov",    email: "ivan@trans8.io",     role: "Broker",       assignment: "Russia · Moscow",       active: false, lastLogin: "12 days ago", initials: "IV" },
-  { id: "U-009", name: "Amir Rahimi",    email: "amir@trans8.io",     role: "Custom Agent", assignment: "Jebel Ali",             active: true,  lastLogin: "4 hr ago",    initials: "AR" },
-  { id: "U-010", name: "Sara Petrov",    email: "sara@trans8.io",     role: "Client",       assignment: "Petrov Imports",        active: false, lastLogin: "1 month ago", initials: "SP" },
+  { id: "U-001", name: "Yusuf Karimi",   email: "yusuf@trans8.io",    role: "Admin",             assignment: "Supervisor",            active: true,  lastLogin: "2 min ago",   initials: "YK" },
+  { id: "U-002", name: "Layla Hosseini", email: "layla@trans8.io",    role: "Logistic Broker",  assignment: "Global",                active: true,  lastLogin: "12 min ago",  initials: "LH" },
+  { id: "U-003", name: "Omar Al-Saud",   email: "omar@trans8.io",     role: "Port Agent",        assignment: "Jebel Ali",             active: true,  lastLogin: "1 hr ago",    initials: "OA" },
+  { id: "U-004", name: "Hassan Khan",    email: "hassan@trans8.io",   role: "Agent",             assignment: "Logistics (Pakistan)",  active: true,  lastLogin: "3 hr ago",    initials: "HK" },
+  { id: "U-005", name: "Mehmet Yilmaz",  email: "mehmet@trans8.io",   role: "Custom Agent",      assignment: "Istanbul Port",         active: true,  lastLogin: "Yesterday",   initials: "MY" },
+  { id: "U-006", name: "Reza Karimi",    email: "reza@trans8.io",     role: "Logistics Partner", assignment: "Sea Freight (AE)",      active: true,  lastLogin: "5 hr ago",    initials: "RK" },
+  { id: "U-007", name: "Nadia Mansouri", email: "nadia@trans8.io",    role: "Driver",            assignment: "Truck (UAE)",           active: true,  lastLogin: "2 days ago",  initials: "NM" },
+  { id: "U-008", name: "Ivan Volkov",    email: "ivan@trans8.io",     role: "Shipping",          assignment: "Liners (RU)",            active: false, lastLogin: "12 days ago", initials: "IV" },
+  { id: "U-009", name: "Amir Rahimi",    email: "amir@trans8.io",     role: "Custom Agent",      assignment: "Jebel Ali",             active: true,  lastLogin: "4 hr ago",    initials: "AR" },
+  { id: "U-010", name: "Sara Petrov",    email: "sara@trans8.io",     role: "Logistic Broker",  assignment: "Turkey",                active: false, lastLogin: "1 month ago", initials: "SP" },
 ];
 
 function AccessPage() {

@@ -44,6 +44,14 @@ function build(): Row[] {
   });
 }
 
+const BROKER_STATS = [
+  { name: "Layla Hosseini", shipments: 142, successRate: "98.6%", avgCommission: "4.8%", rating: "4.9" },
+  { name: "Omar Al-Saud", shipments: 98, successRate: "95.4%", avgCommission: "5.2%", rating: "4.7" },
+  { name: "Mehmet Yilmaz", shipments: 115, successRate: "97.1%", avgCommission: "4.5%", rating: "4.8" },
+  { name: "Nadia Mansouri", shipments: 87, successRate: "94.2%", avgCommission: "5.0%", rating: "4.6" },
+  { name: "Hassan Khan", shipments: 164, successRate: "99.1%", avgCommission: "4.2%", rating: "4.9" }
+];
+
 function BrokerCommissionPage() {
   const [rows, setRows] = useState<Row[]>(() => build());
   const [q, setQ] = useState("");
@@ -81,6 +89,38 @@ function BrokerCommissionPage() {
         <KPI label="Transport commission" value={formatMoney(totals.transport)} />
         <KPI label="Pending payout" value={formatMoney(totals.pending)} warn />
       </div>
+
+      {/* Past Performance Records */}
+      <Panel title="Past Performance Records" className="mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+          {BROKER_STATS.map((b) => (
+            <div key={b.name} className="bg-[var(--surface-2)] border border-border rounded-lg p-4 flex flex-col justify-between hover:border-primary/50 transition-colors">
+              <div>
+                <div className="font-semibold text-sm text-foreground truncate">{b.name}</div>
+                <div className="text-[10px] font-mono text-muted-foreground uppercase mt-0.5">Logistic Broker</div>
+              </div>
+              <div className="space-y-2 mt-4 pt-3 border-t border-border">
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">Shipments</span>
+                  <span className="font-mono font-bold text-foreground">{b.shipments}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">Success Rate</span>
+                  <span className="font-mono font-bold text-[var(--accent-lime)]">{b.successRate}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">Avg Comm</span>
+                  <span className="font-mono font-bold text-foreground">{b.avgCommission}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">Rating</span>
+                  <span className="font-mono font-bold text-[var(--warning)]">{b.rating} ★</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Panel>
 
       <Panel
         title="Commission ledger"

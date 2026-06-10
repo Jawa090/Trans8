@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
-import { PageHeader, Panel, Btn, StatusBadge, Select } from "@/components/admin/ui";
+import { PageHeader, Panel, Btn, StatusBadge } from "@/components/admin/ui";
 import { BOOKINGS } from "@/lib/mock-data";
-import { Check, Clock, Circle, User2 } from "lucide-react";
+import { Check, Clock, Circle, User2, UploadCloud, FileText, X } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/tracking")({
@@ -34,17 +34,6 @@ const PORTS_AT_STEP = [
   "Local Hub (Destination)", "Buyer Warehouse",
 ];
 
-type Incoterm = "EXW" | "FCA" | "FOB" | "CFR" | "CIF" | "CPT" | "CIP" | "DPU" | "DAP" | "DDP";
-/* Step ranges (1-indexed inclusive) shown for each incoterm */
-const INCOTERM_RANGE: Record<Incoterm, [number, number]> = {
-  EXW: [1, 9], FCA: [2, 9], FOB: [3, 9], CFR: [3, 9], CIF: [3, 9],
-  CPT: [3, 9], CIP: [3, 9], DPU: [1, 8], DAP: [1, 8], DDP: [1, 9],
-};
-/* Inclusive last step the seller is responsible for, per incoterm */
-const SELLER_LAST: Record<Incoterm, number> = {
-  EXW: 1, FCA: 2, FOB: 4, CFR: 5, CIF: 6, CPT: 5, CIP: 6, DPU: 8, DAP: 7, DDP: 9,
-};
-
 type Step = { label: string; agent: string; port: string; ts: string | null; notes: string };
 
 function seedSteps(seed: number, type: string): { steps: Step[]; current: number } {
@@ -58,7 +47,7 @@ function seedSteps(seed: number, type: string): { steps: Step[]; current: number
       agent: AGENTS[(seed + i) % AGENTS.length],
       port: PORTS_AT_STEP[i],
       ts: done ? `2026-06-${day} 0${(i % 9) + 1}:${String((seed * (i + 3)) % 60).padStart(2, "0")}` : null,
-      notes: done && i === current - 1 ? "Handover signed and verified." : "",
+      notes: done && i === current - 1 ? "Handover signed and verified." : "Milestone updated by system agent.",
     };
   });
   return { steps, current };
@@ -70,50 +59,76 @@ function StepIcon({ state }: { state: "done" | "active" | "pending" }) {
   return <div className="h-9 w-9 rounded-full border-2 border-border grid place-items-center text-muted-foreground"><Circle className="h-3 w-3" /></div>;
 }
 
+interface UploadedDoc {
+  name: string;
+  size: string;
+}
+
 function TrackingPage() {
   const shipments = useMemo(() => BOOKINGS.slice(0, 12), []);
   const [selectedId, setSelectedId] = useState(shipments[0].id);
   const shipment = shipments.find((s) => s.id === selectedId)!;
   const seed = parseInt(shipment.id.replace(/\D/g, ""), 10);
+  
   const initial = useMemo(() => seedSteps(seed, shipment.type), [seed, shipment.type]);
   const [steps, setSteps] = useState<Step[]>(initial.steps);
   const [current, setCurrent] = useState(initial.current);
-  const [incoterm, setIncoterm] = useState<Incoterm>("EXW");
 
-  const [rangeStart, rangeEnd] = INCOTERM_RANGE[incoterm];
-  const visibleSteps = steps.slice(rangeStart - 1, rangeEnd);
-  const sellerLast = SELLER_LAST[incoterm];
+  // Multi-document state per step
+  const [stepDocs, setStepDocs] = useState<Record<number, UploadedDoc[]>>({
+    0: [{ name: "Packing_List.pdf", size: "245 KB" }, { name: "Commercial_Invoice.pdf", size: "512 KB" }],
+    1: [{ name: "Delivery_Order.pdf", size: "128 KB" }],
+    2: [{ name: "Export_Declaration.pdf", size: "1.1 MB" }],
+  });
 
   // Reset when changing shipment
   const onSelect = (id: string) => {
     setSelectedId(id);
     const s = shipments.find((x) => x.id === id)!;
     const fresh = seedSteps(parseInt(s.id.replace(/\D/g, ""), 10), s.type);
-    setSteps(fresh.steps); setCurrent(fresh.current);
+    setSteps(fresh.steps); 
+    setCurrent(fresh.current);
+    // Seed new files
+    setStepDocs({
+      0: [{ name: "Packing_List.pdf", size: "245 KB" }, { name: "Commercial_Invoice.pdf", size: "512 KB" }],
+      1: [{ name: "Delivery_Order.pdf", size: "128 KB" }],
+      2: [{ name: "Export_Declaration.pdf", size: "1.1 MB" }],
+    });
   };
 
-  const advance = () => {
-    if (current >= STEPS.length) return toast.info("Already delivered.");
-    const idx = current;
-    const now = new Date();
-    const ts = `${now.toISOString().slice(0,10)} ${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`;
-    setSteps((prev) => prev.map((s, i) => i === idx ? { ...s, ts } : s));
-    setCurrent(current + 1);
-    toast.success(`Marked completed: ${steps[idx].label}`);
+  const handleFileUpload = (stepIndex: number, files: FileList | null) => {
+    if (!files) return;
+    const newDocs: UploadedDoc[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const sizeKB = Math.round(file.size / 1024);
+      const sizeStr = sizeKB > 1000 ? `${(sizeKB / 1024).toFixed(1)} MB` : `${sizeKB} KB`;
+      newDocs.push({ name: file.name, size: sizeStr });
+    }
+    setStepDocs((prev) => ({
+      ...prev,
+      [stepIndex]: [...(prev[stepIndex] || []), ...newDocs],
+    }));
+    toast.success(`Uploaded ${files.length} document(s) to Step ${stepIndex + 1}`);
   };
 
-  const updateNotes = (i: number, v: string) =>
-    setSteps((prev) => prev.map((s, idx) => idx === i ? { ...s, notes: v } : s));
+  const removeDoc = (stepIndex: number, docIndex: number) => {
+    setStepDocs((prev) => {
+      const list = [...(prev[stepIndex] || [])];
+      list.splice(docIndex, 1);
+      return { ...prev, [stepIndex]: list };
+    });
+    toast.info("Document removed");
+  };
 
   return (
     <AdminLayout>
       <PageHeader
         title="Shipment Tracking"
-        subtitle="Incoterm-aware milestone visibility across the 9-step pipeline"
-        actions={<>
+        subtitle="Milestone visibility across the 9-step pipeline (View Only)"
+        actions={
           <Btn variant="secondary" onClick={() => toast.success("Tracking link copied")}>Share link</Btn>
-          <Btn onClick={advance}>Advance step</Btn>
-        </>}
+        }
       />
 
       <div className="grid lg:grid-cols-[320px_1fr] gap-6">
@@ -137,32 +152,22 @@ function TrackingPage() {
 
         <div className="space-y-6">
           <Panel>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
               <Meta label="Shipment ID" value={shipment.id} />
               <Meta label="Customer" value={shipment.customer} />
               <Meta label="Route" value={`${shipment.origin} → ${shipment.destination}`} />
               <Meta label="Mode · Cargo" value={`${shipment.type} · ${shipment.cargo}`} />
-              <div>
-                <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mb-1">Incoterm</div>
-                <Select value={incoterm} onChange={(e) => setIncoterm(e.target.value as Incoterm)} className="w-full">
-                  {(Object.keys(INCOTERM_RANGE) as Incoterm[]).map((t) => <option key={t}>{t}</option>)}
-                </Select>
-              </div>
             </div>
           </Panel>
 
-          <Panel
-            title={`Pipeline · ${shipment.id} · ${incoterm}`}
-            action={<span className="text-[10px] font-mono text-muted-foreground uppercase">Steps {rangeStart}–{rangeEnd} · Seller until step {sellerLast}</span>}
-          >
+          <Panel title={`Pipeline · ${shipment.id}`}>
             <ol className="relative">
-              {visibleSteps.map((s, idx) => {
-                const i = rangeStart - 1 + idx;
+              {steps.map((s, i) => {
                 const state: "done" | "active" | "pending" = i < current ? "done" : i === current ? "active" : "pending";
-                const responsibility = (i + 1) <= sellerLast ? "Seller" : "Buyer";
+                const docs = stepDocs[i] || [];
                 return (
                   <li key={s.label} className="flex gap-4 pb-6 last:pb-0 relative">
-                    {idx < visibleSteps.length - 1 && (
+                    {i < steps.length - 1 && (
                       <span className={`absolute left-[18px] top-9 bottom-0 w-px ${i < current - 1 ? "bg-primary" : "bg-border"}`} />
                     )}
                     <StepIcon state={state} />
@@ -171,31 +176,53 @@ function TrackingPage() {
                         <span className="text-[10px] font-mono text-muted-foreground">STEP {i + 1}</span>
                         <span className="font-medium">{s.label}</span>
                         <StatusBadge status={state === "done" ? "Completed" : state === "active" ? "Active" : "Pending"} />
-                        <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${responsibility === "Seller" ? "border-[var(--info)]/40 text-[var(--info)]" : "border-[var(--accent-lime)]/40 text-[var(--accent-lime)]"}`}>
-                          {responsibility.toUpperCase()}
-                        </span>
                       </div>
                       <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted-foreground mt-1.5">
                         <span className="inline-flex items-center gap-1.5"><User2 className="h-3 w-3" />{s.agent}</span>
                         <span className="inline-flex items-center gap-1.5">📍 {s.port}</span>
                         <span className="inline-flex items-center gap-1.5"><Clock className="h-3 w-3" />{s.ts ?? "—"}</span>
                       </div>
-                      <textarea
-                        rows={2}
-                        value={s.notes}
-                        onChange={(e) => updateNotes(i, e.target.value)}
-                        placeholder="Add notes for this step…"
-                        className="mt-2 w-full bg-[var(--surface-2)] border border-border rounded-md p-2 text-sm focus:outline-none focus:border-primary"
-                      />
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        <label className="text-[11px] inline-flex items-center gap-1.5 px-2.5 py-1 rounded border border-border bg-[var(--surface-2)] hover:border-primary cursor-pointer">
-                          📄 BOE
-                          <input type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={(e) => e.target.files?.[0] && toast.success(`BOE uploaded: ${e.target.files[0].name}`)} />
-                        </label>
-                        <label className="text-[11px] inline-flex items-center gap-1.5 px-2.5 py-1 rounded border border-border bg-[var(--surface-2)] hover:border-primary cursor-pointer">
-                          🖼 PIC
-                          <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && toast.success(`PIC uploaded: ${e.target.files[0].name}`)} />
-                        </label>
+                      
+                      {/* View Only Notes Field */}
+                      <div className="mt-2 bg-[var(--surface-2)] border border-border/85 rounded-md p-2.5 text-sm text-foreground/90">
+                        <span className="text-[10px] font-mono text-muted-foreground block mb-0.5">STEP NOTES (READ ONLY):</span>
+                        {s.notes || "No milestone notes available."}
+                      </div>
+
+                      {/* Multi-document upload section */}
+                      <div className="mt-3 space-y-2">
+                        <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider block">Documents ({docs.length})</span>
+                        
+                        {docs.length > 0 && (
+                          <div className="grid sm:grid-cols-2 gap-2">
+                            {docs.map((doc, docIdx) => (
+                              <div key={docIdx} className="flex items-center justify-between px-2.5 py-1.5 rounded bg-[var(--surface-2)] border border-border text-xs">
+                                <span className="inline-flex items-center gap-1.5 truncate max-w-[80%]">
+                                  <FileText className="h-3.5 w-3.5 text-primary shrink-0" />
+                                  <span className="truncate">{doc.name}</span>
+                                </span>
+                                <span className="text-[10px] font-mono text-muted-foreground">{doc.size}</span>
+                                <button type="button" onClick={() => removeDoc(i, docIdx)} className="text-muted-foreground hover:text-[var(--danger)] ml-2" title="Remove">
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="flex items-center">
+                          <label className="text-[11px] inline-flex items-center gap-1.5 px-3 py-1.5 rounded border border-border bg-[var(--surface-2)] hover:border-primary hover:bg-primary/5 cursor-pointer transition-colors">
+                            <UploadCloud className="h-3.5 w-3.5 text-primary" />
+                            <span>Upload Documents</span>
+                            <input 
+                              type="file" 
+                              multiple 
+                              accept=".pdf,.doc,.docx,image/*" 
+                              className="hidden" 
+                              onChange={(e) => handleFileUpload(i, e.target.files)} 
+                            />
+                          </label>
+                        </div>
                       </div>
                     </div>
                   </li>

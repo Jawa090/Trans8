@@ -28,15 +28,15 @@ const NAV: NavGroup[] = [
   ]},
   { label: "Users", items: [
     { label: "All Users", to: "/users", icon: Users },
-    { label: "Customers", to: "/users/customers", icon: UserCircle },
-    { label: "Truck Owners", to: "/users/truck-owners", icon: Truck },
+    { label: "Networked Users", to: "/users/customers", icon: UserCircle },
+    { label: "System Users", to: "/users/truck-owners", icon: Truck },
     { label: "Warehouses", to: "/users/warehouses", icon: Warehouse },
   ]},
   { label: "Operations", items: [
     { label: "All Bookings", to: "/bookings", icon: ClipboardList },
     { label: "Active Trips", to: "/operations/trips", icon: RouteIcon },
     { label: "Load Requests", to: "/operations/loads", icon: PackageSearch },
-    { label: "Bids Management", to: "/operations/bids", icon: Gavel },
+    { label: "Tender Management", to: "/operations/bids", icon: Gavel },
   ]},
   { label: "Logistics", items: [
     { label: "Road Shipments", to: "/logistics/road", icon: Truck },

@@ -4,14 +4,16 @@ import { createFileRoute } from "@tanstack/react-router";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { PageHeader, Panel, Toggle, Btn } from "@/components/admin/ui";
 import { REGIONS, formatCompact } from "@/lib/mock-data";
+import { SettingsTabs } from "./settings";
 
 export const Route = createFileRoute("/settings/regions")({
-  head: () => ({ meta: [{ title: "Regions — Movers Admin" }] }),
+  head: () => ({ meta: [{ title: "Regions — TRANS8" }] }),
   component: () => {
     const [regions, setRegions] = useState(REGIONS);
     return (
       <AdminLayout>
         <PageHeader title="Regions" subtitle={`${regions.filter((r) => r.active).length} of ${regions.length} active`} actions={<Btn onClick={() => toast("New region setup coming up")}>+ New Region</Btn>} />
+        <SettingsTabs active="regions" />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {regions.map((r, i) => (
             <Panel key={r.code}>

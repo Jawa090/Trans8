@@ -22,10 +22,9 @@ function UsersPage() {
   const perPage = 10;
 
   const filtered = useMemo(() => USERS.filter((u) => {
-    if (tab === "Customers" && u.kind !== "Customer") return false;
-    if (tab === "Truck Owners" && u.kind !== "Truck Owner") return false;
-    if (tab === "Warehouses" && u.kind !== "Warehouse") return false;
-    if (q && !u.name.toLowerCase().includes(q.toLowerCase()) && !u.id.toLowerCase().includes(q.toLowerCase())) return false;
+    if (tab === "Networked Users" && u.kind !== "Networked") return false;
+    if (tab === "System Users" && u.kind !== "System") return false;
+    if (q && !u.name.toLowerCase().includes(q.toLowerCase()) && !u.id.toLowerCase().includes(q.toLowerCase()) && !u.role.toLowerCase().includes(q.toLowerCase())) return false;
     if (region && u.region !== region) return false;
     if (status && u.status !== status) return false;
     return true;
@@ -38,10 +37,10 @@ function UsersPage() {
       <PageHeader title="Users" subtitle={`${filtered.length} accounts across the network`}
         actions={<>
           <Btn variant="secondary" onClick={() => toast.success(`Exported ${filtered.length} users to CSV`)}><Download className="h-4 w-4" />Export</Btn>
-          <Btn onClick={() => toast("Use the per-kind pages to add specific users")}>+ New User</Btn>
+          <Btn onClick={() => toast("Use user type settings to invite specific roles")}>+ Invite User</Btn>
         </>} />
 
-      <Tabs tabs={["All", "Customers", "Truck Owners", "Warehouses"]} active={tab} onChange={(t) => { setTab(t); setPage(1); }} />
+      <Tabs tabs={["All", "Networked Users", "System Users"]} active={tab} onChange={(t) => { setTab(t); setPage(1); }} />
 
       <div className="flex flex-wrap gap-2 mb-4">
         <div className="relative flex-1 min-w-[220px]">
@@ -69,7 +68,7 @@ function UsersPage() {
       <Table>
         <THead><TR>
           <TH><input type="checkbox" className="accent-[var(--primary)]" onChange={(e) => setSelected(e.target.checked ? paged.map((u) => u.id) : [])} /></TH>
-          <TH>User</TH><TH>Phone</TH><TH>Region</TH><TH>Kind</TH><TH>Status</TH><TH>Joined</TH><TH>Actions</TH>
+          <TH>User</TH><TH>Phone</TH><TH>Region</TH><TH>Role / Category</TH><TH>Status</TH><TH>Joined</TH><TH>Actions</TH>
         </TR></THead>
         <tbody>
           {paged.map((u) => (
@@ -87,7 +86,10 @@ function UsersPage() {
               </TD>
               <TD className="font-mono text-xs">{u.phone}</TD>
               <TD>{u.region}</TD>
-              <TD className="text-xs text-muted-foreground uppercase font-mono">{u.kind}</TD>
+              <TD>
+                <div className="text-xs font-semibold text-foreground uppercase font-mono">{u.role}</div>
+                {u.subRole && <div className="text-[10px] text-muted-foreground font-mono">{u.subRole}</div>}
+              </TD>
               <TD><StatusBadge status={u.status} /></TD>
               <TD className="font-mono text-xs text-muted-foreground">{u.joined}</TD>
               <TD>
@@ -123,10 +125,12 @@ function UsersPage() {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
+              <Stat label="Category" value={drawer.kind} />
+              <Stat label="Role" value={drawer.role} />
+              {drawer.subRole && <Stat label="Sub-role / Spec" value={drawer.subRole} />}
+              <Stat label="Region" value={drawer.region} />
               <Stat label="Wallet" value={formatMoney(drawer.walletBalance)} />
               <Stat label="Trips" value={String(drawer.trips)} />
-              <Stat label="Rating" value={`★ ${drawer.rating}`} />
-              <Stat label="Region" value={drawer.region} />
             </div>
             <div>
               <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mb-2">Verification</div>

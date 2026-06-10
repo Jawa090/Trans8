@@ -33,7 +33,7 @@ function KPI({ label, value, delta, icon: Icon, accent }: { label: string; value
 
 function Dashboard() {
   const recentBookings = BOOKINGS.slice(0, 6);
-  const topOwners = USERS.filter((u) => u.kind === "Truck Owner").slice(0, 5);
+  const topOwners = USERS.filter((u) => u.role === "Driver").slice(0, 5);
   const recentTxns = TRANSACTIONS.slice(0, 5);
   const pendingUsers = USERS.filter((u) => u.status === "Pending").slice(0, 4);
 
@@ -170,7 +170,7 @@ function Dashboard() {
                 <Avatar initials={u.avatar} size={36} />
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium truncate">{u.name}</div>
-                  <div className="text-[11px] font-mono text-muted-foreground">{u.kind} · {u.region}</div>
+                  <div className="text-[11px] font-mono text-muted-foreground">{u.role} · {u.region}</div>
                 </div>
                 <button className="h-7 w-7 grid place-items-center rounded bg-primary/15 text-[var(--accent-lime)] hover:bg-primary/25 transition-colors"><Check className="h-3.5 w-3.5" /></button>
                 <button className="h-7 w-7 grid place-items-center rounded bg-[var(--danger)]/15 text-[var(--danger)] hover:bg-[var(--danger)]/25 transition-colors"><X className="h-3.5 w-3.5" /></button>

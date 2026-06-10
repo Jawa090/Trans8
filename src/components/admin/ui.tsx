@@ -113,14 +113,14 @@ export function Table({ children }: { children: ReactNode }) {
 export function THead({ children }: { children: ReactNode }) {
   return <thead className="bg-[var(--surface-2)] sticky top-0">{children}</thead>;
 }
-export function TH({ children, className = "" }: { children?: ReactNode; className?: string }) {
-  return <th className={`text-left px-4 py-3 text-[10px] font-mono font-semibold uppercase tracking-wider text-muted-foreground ${className}`}>{children}</th>;
+export function TH({ children, className = "", ...props }: React.ThHTMLAttributes<HTMLTableCellElement>) {
+  return <th className={`text-left px-4 py-3 text-[10px] font-mono font-semibold uppercase tracking-wider text-muted-foreground ${className}`} {...props}>{children}</th>;
 }
-export function TR({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <tr className={`border-t border-border hover:bg-[var(--surface-3)] transition-colors ${className}`}>{children}</tr>;
+export function TR({ children, className = "", ...props }: React.HTMLAttributes<HTMLTableRowElement>) {
+  return <tr className={`border-t border-border hover:bg-[var(--surface-3)] transition-colors ${className}`} {...props}>{children}</tr>;
 }
-export function TD({ children, className = "" }: { children?: ReactNode; className?: string }) {
-  return <td className={`px-4 py-3 ${className}`}>{children}</td>;
+export function TD({ children, className = "", ...props }: React.TdHTMLAttributes<HTMLTableCellElement>) {
+  return <td className={`px-4 py-3 ${className}`} {...props}>{children}</td>;
 }
 
 /* Avatar */

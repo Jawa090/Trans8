@@ -4,11 +4,12 @@ import { createFileRoute } from "@tanstack/react-router";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { PageHeader, Table, THead, TH, TR, TD, Avatar, Btn, Modal, Field, Input, Select } from "@/components/admin/ui";
 import { ADMIN_USERS } from "@/lib/mock-data";
+import { SettingsTabs } from "./settings";
 
 const ROLES = ["Super Admin", "Operations", "Finance", "Support"];
 
 export const Route = createFileRoute("/settings/admins")({
-  head: () => ({ meta: [{ title: "Admin Users — Movers Admin" }] }),
+  head: () => ({ meta: [{ title: "Admin Users — TRANS8" }] }),
   component: AdminsPage,
 });
 
@@ -26,6 +27,7 @@ function AdminsPage() {
   return (
     <AdminLayout>
       <PageHeader title="Admin Users" subtitle={`${list.length} team members`} actions={<Btn onClick={() => setOpen(true)}>+ Invite Admin</Btn>} />
+      <SettingsTabs active="admins" />
       <Table>
         <THead><TR><TH>Admin</TH><TH>Email</TH><TH>Role</TH><TH>Last Active</TH><TH></TH></TR></THead>
         <tbody>{list.map((a) => (
@@ -45,7 +47,7 @@ function AdminsPage() {
         footer={<><Btn variant="ghost" onClick={() => setOpen(false)}>Cancel</Btn><Btn onClick={invite}>Send Invite</Btn></>}>
         <div className="space-y-3">
           <Field label="Name"><Input className="w-full" value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} /></Field>
-          <Field label="Email"><Input className="w-full" type="email" value={draft.email} onChange={(e) => setDraft({ ...draft, email: e.target.value })} placeholder="name@movers.io" /></Field>
+          <Field label="Email"><Input className="w-full" type="email" value={draft.email} onChange={(e) => setDraft({ ...draft, email: e.target.value })} placeholder="name@trans8.io" /></Field>
           <Field label="Role"><Select className="w-full" value={draft.role} onChange={(e) => setDraft({ ...draft, role: e.target.value })}>{ROLES.map((r) => <option key={r}>{r}</option>)}</Select></Field>
         </div>
       </Modal>

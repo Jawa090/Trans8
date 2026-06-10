@@ -38,24 +38,50 @@ let _seed = 1;
 function seeded() { _seed = (_seed * 9301 + 49297) % 233280; return _seed / 233280; }
 const srand = <T,>(a: T[]) => a[Math.floor(seeded() * a.length)];
 
-export type UserKind = "Customer" | "Truck Owner" | "Warehouse";
+export type UserKind = "Networked" | "System";
 export type UserStatus = "Active" | "Suspended" | "Pending";
 export interface User {
   id: string; name: string; phone: string; region: string; kind: UserKind;
+  role: string; subRole?: string;
   status: UserStatus; joined: string; avatar: string; email: string; walletBalance: number; rating: number; trips: number;
 }
 
 export const USERS: User[] = Array.from({ length: 48 }, (_, i) => {
   const first = srand(FIRST), last = srand(LAST);
   const name = `${first} ${last}`;
-  const kind = srand(["Customer", "Customer", "Truck Owner", "Truck Owner", "Warehouse"] as UserKind[]);
+  const isNetworked = i % 2 === 0;
+  const kind: UserKind = isNetworked ? "Networked" : "System";
+  
+  let role = "";
+  let subRole = "";
+  
+  if (isNetworked) {
+    const netRoles = ["Logistic Broker", "Port Agent", "Custom Agent", "Logistics Partner"];
+    role = netRoles[i % netRoles.length];
+    if (role === "Logistics Partner") {
+      subRole = ["Road", "Rail", "Sea", "Air"][i % 4];
+    }
+  } else {
+    const sysRoles = ["Driver", "Agent", "Admin", "Shipping"];
+    role = sysRoles[i % sysRoles.length];
+    if (role === "Driver") {
+      subRole = ["Truck by type", "Container", "Compressor", "Pickup"][i % 4];
+    } else if (role === "Agent") {
+      subRole = ["Port", "Logistics", "Warehouse", "Survey", "Insurance"][i % 5];
+    } else if (role === "Admin") {
+      subRole = ["Supervisor", "Accounts", "Operations", "Relations", "Ship", "Project"][i % 6];
+    } else if (role === "Shipping") {
+      subRole = ["Liners", "NVOCC", "Feeder", "Spot"][i % 4];
+    }
+  }
+  
   const status = srand(["Active", "Active", "Active", "Pending", "Suspended"] as UserStatus[]);
   const region = srand(REGIONS).name;
   return {
     id: `USR-${(10234 + i).toString()}`,
-    name, kind, status, region,
+    name, kind, role, subRole, status, region,
     phone: `+${Math.floor(seeded() * 90 + 10)} ${Math.floor(seeded() * 900 + 100)} ${Math.floor(seeded() * 9000 + 1000)}`,
-    email: `${first.toLowerCase()}.${last.toLowerCase()}@movers.io`,
+    email: `${first.toLowerCase()}.${last.toLowerCase()}@trans8.io`,
     joined: `2025-${String(Math.floor(seeded() * 12) + 1).padStart(2, "0")}-${String(Math.floor(seeded() * 28) + 1).padStart(2, "0")}`,
     avatar: `${first[0]}${last[0]}`,
     walletBalance: Math.floor(seeded() * 12000),
