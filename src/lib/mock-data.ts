@@ -41,10 +41,45 @@ const srand = <T,>(a: T[]) => a[Math.floor(seeded() * a.length)];
 export type UserKind = "Networked" | "System";
 export type UserStatus = "Active" | "Suspended" | "Pending";
 export interface User {
-  id: string; name: string; phone: string; region: string; kind: UserKind;
-  role: string; subRole?: string;
-  status: UserStatus; joined: string; avatar: string; email: string; walletBalance: number; rating: number; trips: number;
+  id: string;
+  name: string;
+  phone: string;
+  region: string;
+  city: string;
+  kind: UserKind;
+  role: string;
+  subRole?: string;
+  activity: string; // Specific Activity
+  photo: string; // Profile photo URL
+  status: UserStatus;
+  joined: string;
+  avatar: string;
+  email: string;
+  walletBalance: number;
+  rating: number;
+  trips: number;
 }
+
+const REGION_CITIES: Record<string, string[]> = {
+  "Iran": ["Tehran", "Shiraz", "Mashhad", "Isfahan", "Bandar Abbas"],
+  "Pakistan": ["Karachi", "Lahore", "Islamabad", "Quetta", "Peshawar"],
+  "UAE": ["Dubai", "Abu Dhabi", "Sharjah", "Ajman", "Fujairah"],
+  "South Africa": ["Johannesburg", "Cape Town", "Durban", "Pretoria"],
+  "Turkey": ["Istanbul", "Ankara", "Izmir", "Bursa", "Antalya"],
+  "GCC": ["Riyadh", "Doha", "Kuwait City", "Manama", "Muscat"],
+  "Russia": ["Moscow", "Saint Petersburg", "Novosibirsk", "Ekaterinburg"]
+};
+
+const ROLE_ACTIVITIES: Record<string, string[]> = {
+  "Driver": ["Linehaul Transport", "Intercity Delivery", "Refrigerated Hauling", "Hazmat Transport", "Last-Mile Delivery"],
+  "Logistic Broker": ["Freight Tendering", "Brokerage Matching", "Negotiating Rates", "Cargo Booking"],
+  "Port Agent": ["Vessel Clearance", "Customs Inspection", "Berth Allocation", "Container Loading"],
+  "Custom Agent": ["Duty Assessment", "Import/Export Filing", "Sanitary Inspection", "B/L Verification"],
+  "Logistics Partner": ["Consolidation Packing", "Cross-Docking", "Inventory Audits", "Last-mile Dispatch"],
+  "Admin": ["System Configuration", "Billing Verification", "User Approval", "Operations Oversight"],
+  "Agent": ["Warehouse Management", "Surveying & Insurance", "Regional Dispatches"],
+  "Shipping": ["Route Optimization", "LCL Planning", "Vessel Scheduling", "Bunkering Coordination"]
+};
 
 export const USERS: User[] = Array.from({ length: 48 }, (_, i) => {
   const first = srand(FIRST), last = srand(LAST);
@@ -77,9 +112,15 @@ export const USERS: User[] = Array.from({ length: 48 }, (_, i) => {
   
   const status = srand(["Active", "Active", "Active", "Pending", "Suspended"] as UserStatus[]);
   const region = srand(REGIONS).name;
+  const cities = REGION_CITIES[region] || ["Dubai"];
+  const city = cities[i % cities.length];
+  const activities = ROLE_ACTIVITIES[role] || ["Operations Assistance"];
+  const activity = activities[i % activities.length];
+  const photo = `https://api.dicebear.com/7.x/adventurer/svg?seed=${first}${last}`;
+
   return {
     id: `USR-${(10234 + i).toString()}`,
-    name, kind, role, subRole, status, region,
+    name, kind, role, subRole, status, region, city, activity, photo,
     phone: `+${Math.floor(seeded() * 90 + 10)} ${Math.floor(seeded() * 900 + 100)} ${Math.floor(seeded() * 9000 + 1000)}`,
     email: `${first.toLowerCase()}.${last.toLowerCase()}@trans8.io`,
     joined: `2025-${String(Math.floor(seeded() * 12) + 1).padStart(2, "0")}-${String(Math.floor(seeded() * 28) + 1).padStart(2, "0")}`,

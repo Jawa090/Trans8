@@ -1,22 +1,26 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState } from "react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
-import { Panel, PageHeader, StatusBadge, Btn, Avatar, Table, THead, TH, TR, TD } from "@/components/admin/ui";
+import { Panel, PageHeader, StatusBadge, Btn, Avatar, Table, THead, TH, TR, TD, Drawer } from "@/components/admin/ui";
 import { Users, Truck, DollarSign, MapPin, ArrowUpRight, Star, Check, X } from "lucide-react";
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid,
   PieChart, Pie, Cell,
 } from "recharts";
 import { REVENUE_SERIES, BOOKINGS_BY_TYPE, BOOKINGS, USERS, TRANSACTIONS, REGIONS, formatMoney, formatCompact } from "@/lib/mock-data";
+import { toCsv, downloadFile, csvFilename, printReceipt } from "@/lib/export-utils";
+import { Download, FileText } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/")({
   head: () => ({ meta: [{ title: "Dashboard — Movers Admin" }] }),
   component: Dashboard,
 });
 
-function KPI({ label, value, delta, icon: Icon, accent }: { label: string; value: string; delta: string; icon: React.ComponentType<{ className?: string }>; accent?: boolean }) {
+function KPI({ label, value, delta, icon: Icon, accent, to }: { label: string; value: string; delta: string; icon: React.ComponentType<{ className?: string }>; accent?: boolean; to?: string }) {
   const positive = delta.startsWith("+");
-  return (
-    <div className="bg-[var(--surface-1)] border border-border rounded-lg p-5 relative overflow-hidden group hover:border-primary/50 transition-colors">
+  const content = (
+    <div className="bg-[var(--surface-1)] border border-border rounded-lg p-5 relative overflow-hidden group hover:border-primary/50 cursor-pointer transition-colors h-full">
       <div className="flex items-start justify-between mb-4">
         <div className={`h-10 w-10 rounded-md grid place-items-center ${accent ? "bg-primary text-primary-foreground" : "bg-[var(--surface-2)] text-primary border border-border"}`}>
           <Icon className="h-5 w-5" />
@@ -29,11 +33,17 @@ function KPI({ label, value, delta, icon: Icon, accent }: { label: string; value
       <div className="font-mono text-3xl font-bold tracking-tight">{value}</div>
     </div>
   );
+
+  if (to) {
+    return <Link to={to} className="block no-underline text-inherit h-full">{content}</Link>;
+  }
+  return content;
 }
 
 function Dashboard() {
   const recentBookings = BOOKINGS.slice(0, 6);
   const topOwners = USERS.filter((u) => u.role === "Driver").slice(0, 5);
+  const [txnDrawer, setTxnDrawer] = useState<(typeof TRANSACTIONS)[number] | null>(null);
   const recentTxns = TRANSACTIONS.slice(0, 5);
   const pendingUsers = USERS.filter((u) => u.status === "Pending").slice(0, 4);
 
@@ -50,10 +60,10 @@ function Dashboard() {
 
       {/* KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
-        <KPI label="Total Users" value="73,610" delta="+12.4%" icon={Users} accent />
-        <KPI label="Active Bookings" value="2,184" delta="+8.1%" icon={Truck} />
-        <KPI label="Total Revenue" value={formatMoney(6128400)} delta="+18.7%" icon={DollarSign} />
-        <KPI label="Active Trips" value="412" delta="+3.2%" icon={MapPin} />
+        <KPI label="Total Users" value="73,610" delta="+12.4%" icon={Users} to="/users" accent />
+        <KPI label="Active Bookings" value="2,184" delta="+8.1%" icon={Truck} to="/bookings" />
+        <KPI label="Total Revenue" value={formatMoney(6128400)} delta="+18.7%" icon={DollarSign} to="/finance" />
+        <KPI label="Active Trips" value="412" delta="+3.2%" icon={MapPin} to="/operations/trips" />
       </div>
 
       {/* Charts */}
@@ -144,13 +154,15 @@ function Dashboard() {
 
       {/* Row 4 */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <Panel title="Recent Transactions">
+        <Panel title="Recent Transactions" action={
+          <Link to="/finance" className="text-xs text-primary hover:text-[var(--accent-lime)] inline-flex items-center gap-1">View all <ArrowUpRight className="h-3 w-3" /></Link>
+        }>
           <ul className="divide-y divide-border -my-2">
             {recentTxns.map((t) => (
-              <li key={t.id} className="py-2.5 flex items-center justify-between gap-3">
+              <li key={t.id} className="py-2.5 flex items-center justify-between gap-3 cursor-pointer hover:bg-[var(--surface-2)] -mx-5 px-5 transition-colors" onClick={() => setTxnDrawer(t)}>
                 <div className="min-w-0">
-                  <div className="text-sm truncate">{t.user}</div>
-                  <div className="text-[11px] font-mono text-muted-foreground uppercase">{t.type} · {t.gateway}</div>
+                  <div className="text-sm font-medium truncate">{t.user}</div>
+                  <div className="text-[11px] font-mono text-muted-foreground uppercase"><span className="text-primary">{t.id}</span> · {t.type}</div>
                 </div>
                 <div className="text-right">
                   <div className="font-mono text-sm">{formatMoney(t.amount)}</div>
@@ -161,7 +173,87 @@ function Dashboard() {
           </ul>
         </Panel>
 
-        <Panel title="Pending Verifications" action={
+        {/* Transaction Detail Drawer */}
+      <Drawer open={!!txnDrawer} onClose={() => setTxnDrawer(null)} title={txnDrawer?.id || ""}>
+        {txnDrawer && (
+          <div className="space-y-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">{txnDrawer.type}</div>
+                <div className="text-lg font-display font-bold mt-1">{txnDrawer.id}</div>
+              </div>
+              <StatusBadge status={txnDrawer.status} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-[var(--surface-2)] border border-border rounded-md p-3">
+                <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">User</div>
+                <div className="text-sm font-medium mt-1">{txnDrawer.user}</div>
+              </div>
+              <div className="bg-[var(--surface-2)] border border-border rounded-md p-3">
+                <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Amount</div>
+                <div className="text-sm font-mono text-[var(--accent-lime)] font-bold mt-1">{formatMoney(txnDrawer.amount)}</div>
+              </div>
+              <div className="bg-[var(--surface-2)] border border-border rounded-md p-3">
+                <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Gateway</div>
+                <div className="text-sm font-medium mt-1">{txnDrawer.gateway}</div>
+              </div>
+              <div className="bg-[var(--surface-2)] border border-border rounded-md p-3">
+                <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Date</div>
+                <div className="text-sm font-medium mt-1">{txnDrawer.date}</div>
+              </div>
+            </div>
+            <Panel title="Transaction Timeline">
+              <ol className="relative border-l border-border ml-2 space-y-3 pl-4">
+                <li className="text-xs relative">
+                  <span className="absolute -left-[5px] h-2.5 w-2.5 rounded-full bg-primary" />
+                  <div className="font-medium">{txnDrawer.type} initiated</div>
+                  <div className="text-muted-foreground font-mono">{txnDrawer.date} · {txnDrawer.gateway}</div>
+                </li>
+                <li className="text-xs relative">
+                  <span className={`absolute -left-[5px] h-2.5 w-2.5 rounded-full ${txnDrawer.status !== "Failed" ? "bg-primary" : "bg-[var(--surface-3)]"}`} />
+                  <div className="font-medium">Gateway processed</div>
+                  <div className="text-muted-foreground font-mono">Confirmation pending</div>
+                </li>
+                <li className="text-xs relative">
+                  <span className={`absolute -left-[5px] h-2.5 w-2.5 rounded-full ${txnDrawer.status === "Completed" ? "bg-primary" : "bg-[var(--surface-3)]"}`} />
+                  <div className={`font-medium ${txnDrawer.status === "Completed" ? "" : "text-muted-foreground"}`}>
+                    {txnDrawer.status === "Completed" ? "Completed" : txnDrawer.status === "Failed" ? "Failed" : "Pending"}
+                  </div>
+                </li>
+              </ol>
+            </Panel>
+
+            <div className="flex flex-wrap gap-2 pt-2 border-t border-border">
+              <Btn className="flex-1" onClick={() => {
+                const csv = toCsv([
+                  { ID: txnDrawer.id, User: txnDrawer.user, Type: txnDrawer.type, Gateway: txnDrawer.gateway, Amount: txnDrawer.amount, Status: txnDrawer.status, Date: txnDrawer.date }
+                ], ["ID", "User", "Type", "Gateway", "Amount", "Status", "Date"]);
+                downloadFile(csv, csvFilename(`TXN_${txnDrawer.id}`));
+                toast.success(`CSV exported: ${txnDrawer.id}`);
+              }}>
+                <Download className="h-4 w-4" /> Export CSV
+              </Btn>
+              <Btn variant="secondary" className="flex-1" onClick={() => {
+                const w = printReceipt(`Transaction ${txnDrawer.id}`, [
+                  { label: "Transaction ID", value: txnDrawer.id },
+                  { label: "User", value: txnDrawer.user },
+                  { label: "Type", value: txnDrawer.type },
+                  { label: "Gateway", value: txnDrawer.gateway },
+                  { label: "Amount", value: formatMoney(txnDrawer.amount) },
+                  { label: "Status", value: txnDrawer.status },
+                  { label: "Date", value: txnDrawer.date },
+                ]);
+                if (w) toast.success("Receipt opened for printing / PDF save");
+                else toast.error("Popup blocked — allow popups to print receipts");
+              }}>
+                <FileText className="h-4 w-4" /> Save PDF
+              </Btn>
+            </div>
+          </div>
+        )}
+      </Drawer>
+
+      <Panel title="Pending Verifications" action={
           <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[var(--warning)]/15 text-[var(--warning)]">{pendingUsers.length} QUEUE</span>
         }>
           <ul className="space-y-3">

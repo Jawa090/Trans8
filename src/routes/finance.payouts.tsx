@@ -11,7 +11,7 @@ export const Route = createFileRoute("/finance/payouts")({
 });
 
 function PayoutsPage() {
-  const base = useMemo(() => TRANSACTIONS.filter((t) => t.type === "Payout").map((t) => ({ ...t })), []);
+  const base = useMemo(() => TRANSACTIONS.filter((t) => t.type === "Payout").map((t) => ({ ...t, status: "Pending" as const })), []);
   const [rows, setRows] = useState(base);
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("");

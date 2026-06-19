@@ -8,9 +8,10 @@ interface Props {
   type?: "Road" | "Train" | "Air" | "Sea";
   idLabel?: string;
   showContainer?: boolean;
+  locationFilter?: string;
 }
 
-export function BookingsView({ type, idLabel = "Booking", showContainer }: Props) {
+export function BookingsView({ type, idLabel = "Booking", showContainer, locationFilter }: Props) {
   const initial = useMemo(() => (type ? BOOKINGS.filter((b) => b.type === type) : BOOKINGS), [type]);
   const [all, setAll] = useState<Booking[]>(initial);
   const [q, setQ] = useState("");
@@ -26,8 +27,12 @@ export function BookingsView({ type, idLabel = "Booking", showContainer }: Props
     }
     if (status && b.status !== status) return false;
     if (mode && b.containerType !== mode) return false;
+    if (locationFilter) {
+      const loc = locationFilter.toLowerCase();
+      if (!b.origin.toLowerCase().includes(loc) && !b.destination.toLowerCase().includes(loc)) return false;
+    }
     return true;
-  }), [all, q, status, mode]);
+  }), [all, q, status, mode, locationFilter]);
 
   const updateStatus = (id: string, next: Booking["status"]) => {
     setAll((rows) => rows.map((r) => (r.id === id ? { ...r, status: next } : r)));
@@ -55,7 +60,7 @@ export function BookingsView({ type, idLabel = "Booking", showContainer }: Props
         </Select>
         {showContainer && (
           <Select value={mode} onChange={(e) => setMode(e.target.value)}>
-            <option value="">All modes</option><option>FCL</option><option>LCL</option><option>Bulk</option>
+            <option value="">All modes</option><option>FCL</option><option>LCL</option>
           </Select>
         )}
       </div>

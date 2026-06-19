@@ -97,8 +97,8 @@ function BookingDetail({ b }: { b: Booking }) {
 
       {b.containerType && (
         <Panel title="Sea cargo">
-          <div className="grid grid-cols-3 gap-2">
-            {(["FCL", "LCL", "Bulk"] as const).map((m) => (
+          <div className="grid grid-cols-2 gap-2">
+            {(["FCL", "LCL"] as const).map((m) => (
               <button key={m} className={`px-3 py-2 rounded-md text-xs font-mono uppercase border ${b.containerType === m ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:border-primary"}`}>{m}</button>
             ))}
           </div>

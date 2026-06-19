@@ -124,7 +124,21 @@ export function TD({ children, className = "", ...props }: React.TdHTMLAttribute
 }
 
 /* Avatar */
-export function Avatar({ initials, size = 32 }: { initials: string; size?: number }) {
+export function Avatar({ initials, size = 32, photo }: { initials: string; size?: number; photo?: string }) {
+  if (photo) {
+    return (
+      <img
+        src={photo}
+        alt={initials}
+        style={{ width: size, height: size }}
+        className="rounded-md object-cover border border-border bg-[var(--surface-3)] shrink-0"
+        onError={(e) => {
+          // fallback to text initials if loading fails
+          (e.currentTarget as any).style.display = 'none';
+        }}
+      />
+    );
+  }
   return (
     <div
       style={{ width: size, height: size }}

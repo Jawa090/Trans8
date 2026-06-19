@@ -21,13 +21,97 @@ const COUNTRY_FLAGS: Record<string, string> = {
   India: "🇮🇳"
 };
 
-const PORTS_BY_COUNTRY: Record<string, string[]> = {
-  UAE: ["Jebel Ali", "Sharjah", "Abu Dhabi", "Fujairah", "Ras Al Khaimah", "DXB", "AUH", "SHJ", "DWC", "Etihad Rail", "Hatta", "Al Ghuwaifat", "Mezyad"],
-  Pakistan: ["Karachi", "Port Qasim", "Gwadar", "KHI", "LHE", "ISB", "Karachi Station", "Lahore Station", "Rimdan", "Tafatan", "Wagah", "Torkham"],
-  Iran: ["Bandar Abbas", "Chabahar", "Bushehr", "Bandar Imam", "IKA Tehran", "Mashhad", "Shiraz", "Tehran Station", "Mashhad Station", "Dogharoun", "Milak", "Bazargan", "Mirjaveh"],
-  "South Africa": ["Durban", "Cape Town", "Port Elizabeth", "Richards Bay", "JNB", "CPT", "DUR", "Johannesburg", "Cape Town Station", "Beit Bridge", "Lebombo", "Oshoek"],
-  Turkey: ["Istanbul", "Mersin", "Izmir", "Trabzon", "Iskenderun", "IST", "ESB", "ADB", "Haydarpasa", "Ankara Central", "Kapikule", "Habur", "Dogukapi"],
-  India: ["JNPT Mumbai", "Chennai", "Mundra", "Kolkata", "Cochin", "BOM", "DEL", "MAA", "CCU", "Mumbai Central", "Delhi Junction", "Chennai Central", "Attari Wagah", "Petrapole", "Raxaul"]
+export const META_DIRECTORIES: Record<string, {
+  cities: string[];
+  ports: string[];
+  airports: { code: string; name: string; type: "International" | "Domestic" }[];
+  stations: string[];
+}> = {
+  UAE: {
+    cities: ["Dubai", "Abu Dhabi", "Sharjah", "Al Ain", "Ajman", "Ras Al Khaimah", "Fujairah"],
+    ports: ["Jebel Ali Port", "Khalifa Port", "Port Rashid", "Zayed Port", "Sharjah Port", "Fujairah Port"],
+    airports: [
+      { code: "DXB", name: "Dubai International Airport", type: "International" },
+      { code: "AUH", name: "Zayed International Airport", type: "International" },
+      { code: "SHJ", name: "Sharjah International Airport", type: "International" },
+      { code: "RKT", name: "Ras Al Khaimah Airport", type: "Domestic" },
+      { code: "AAN", name: "Al Ain International Airport", type: "Domestic" },
+      { code: "DWC", name: "Al Maktoum International Airport", type: "International" }
+    ],
+    stations: ["Etihad Rail Ghuwaifat Station", "Etihad Rail Ruwais Station", "Etihad Rail Khalifa Port Station", "Etihad Rail Jebel Ali Station", "Etihad Rail Fujairah Station"]
+  },
+  Pakistan: {
+    cities: ["Karachi", "Lahore", "Islamabad", "Rawalpindi", "Peshawar", "Quetta", "Multan", "Faisalabad", "Sialkot", "Gwadar"],
+    ports: ["Port of Karachi", "Port Qasim", "Gwadar Port"],
+    airports: [
+      { code: "KHI", name: "Jinnah International Airport", type: "International" },
+      { code: "LHE", name: "Allama Iqbal International Airport", type: "International" },
+      { code: "ISB", name: "Islamabad International Airport", type: "International" },
+      { code: "PEW", name: "Bacha Khan International Airport", type: "International" },
+      { code: "UET", name: "Quetta International Airport", type: "Domestic" },
+      { code: "MUX", name: "Multan International Airport", type: "Domestic" },
+      { code: "SKT", name: "Sialkot International Airport", type: "International" },
+      { code: "GWD", name: "Gwadar International Airport", type: "Domestic" }
+    ],
+    stations: ["Karachi Cantonment Station", "Lahore Junction Station", "Rawalpindi Station", "Peshawar Cantonment Station", "Quetta Station", "Multan Cantonment Station"]
+  },
+  Iran: {
+    cities: ["Tehran", "Mashhad", "Isfahan", "Shiraz", "Tabriz", "Karaj", "Ahvaz", "Qom", "Bandar Abbas", "Chabahar"],
+    ports: ["Bandar Abbas Port", "Chabahar Port", "Bushehr Port", "Bandar Imam Khomeini Port", "Anzali Port"],
+    airports: [
+      { code: "IKA", name: "Imam Khomeini International Airport", type: "International" },
+      { code: "THR", name: "Mehrabad Airport", type: "Domestic" },
+      { code: "MHD", name: "Mashhad International Airport", type: "International" },
+      { code: "SYZ", name: "Shiraz International Airport", type: "International" },
+      { code: "IFN", name: "Isfahan International Airport", type: "Domestic" },
+      { code: "TBZ", name: "Tabriz International Airport", type: "Domestic" },
+      { code: "BND", name: "Bandar Abbas Airport", type: "Domestic" }
+    ],
+    stations: ["Tehran Railway Station", "Mashhad Railway Station", "Isfahan Railway Station", "Tabriz Railway Station", "Shiraz Railway Station", "Bandar Abbas Railway Station"]
+  },
+  "South Africa": {
+    cities: ["Johannesburg", "Cape Town", "Durban", "Pretoria", "Port Elizabeth", "Bloemfontein", "East London", "Kimberley"],
+    ports: ["Port of Durban", "Port of Cape Town", "Port of Port Elizabeth", "Richards Bay Port", "Saldanha Bay Port"],
+    airports: [
+      { code: "JNB", name: "O.R. Tambo International Airport", type: "International" },
+      { code: "CPT", name: "Cape Town International Airport", type: "International" },
+      { code: "DUR", name: "King Shaka International Airport", type: "International" },
+      { code: "PLZ", name: "Chief Dawid Stuurman Airport", type: "Domestic" },
+      { code: "BFN", name: "Bram Fischer International Airport", type: "Domestic" },
+      { code: "ELS", name: "East London Airport", type: "Domestic" },
+      { code: "GRJ", name: "George Airport", type: "Domestic" }
+    ],
+    stations: ["Johannesburg Park Station", "Cape Town Station", "Durban Station", "Pretoria Station", "Port Elizabeth Station"]
+  },
+  Turkey: {
+    cities: ["Istanbul", "Ankara", "Izmir", "Bursa", "Antalya", "Adana", "Konya", "Gaziantep", "Mersin", "Trabzon"],
+    ports: ["Port of Istanbul", "Port of Mersin", "Port of Izmir", "Port of Iskenderun", "Port of Trabzon"],
+    airports: [
+      { code: "IST", name: "Istanbul Airport", type: "International" },
+      { code: "SAW", name: "Sabiha Gokcen International Airport", type: "International" },
+      { code: "ESB", name: "Ankara Esenboga Airport", type: "International" },
+      { code: "ADB", name: "Izmir Adnan Menderes Airport", type: "International" },
+      { code: "AYT", name: "Antalya Airport", type: "International" },
+      { code: "ADA", name: "Adana Sakirpasa Airport", type: "Domestic" },
+      { code: "TZX", name: "Trabzon Airport", type: "Domestic" }
+    ],
+    stations: ["Istanbul Sirkeci Station", "Istanbul Haydarpasa Station", "Ankara Central Station", "Izmir Alsancak Station", "Eskişehir Station"]
+  },
+  India: {
+    cities: ["Mumbai", "Delhi", "Bangalore", "Chennai", "Kolkata", "Hyderabad", "Ahmedabad", "Pune", "Jaipur", "Surat"],
+    ports: ["JNPT Port", "Chennai Port", "Mundra Port", "Kolkata Port", "Cochin Port", "Kandla Port"],
+    airports: [
+      { code: "DEL", name: "Indira Gandhi International Airport", type: "International" },
+      { code: "BOM", name: "Chhatrapati Shivaji Maharaj Airport", type: "International" },
+      { code: "BLR", name: "Kempegowda International Airport", type: "International" },
+      { code: "MAA", name: "Chennai International Airport", type: "International" },
+      { code: "CCU", name: "Netaji Subhash Chandra Bose Airport", type: "International" },
+      { code: "HYD", name: "Rajiv Gandhi International Airport", type: "International" },
+      { code: "AMD", name: "Sardar Vallabhbhai Patel Airport", type: "Domestic" },
+      { code: "PNQ", name: "Pune Airport", type: "Domestic" }
+    ],
+    stations: ["New Delhi Railway Station", "Mumbai Central Station", "Howrah Junction", "KSR Bengaluru Station", "Chennai Central Station", "Secunderabad Junction"]
+  }
 };
 
 const TRANSPORT = ["Sea", "Air", "Rail", "Road"] as const;
@@ -66,9 +150,10 @@ function LoadRequestPage() {
   const [form, setForm] = useState({
     customer: "",
     country: "UAE",
+    city: "Dubai",
     transport: "Sea" as typeof TRANSPORT[number],
-    origin: "Jebel Ali",
-    destination: "DXB",
+    origin: "Jebel Ali Port",
+    destination: "Khalifa Port",
     loadType: "Container",
     incoterm: "FOB",
     route: "TR-001 · UAE Local Route",
@@ -81,13 +166,39 @@ function LoadRequestPage() {
   const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) => {
     setForm((f) => {
       const next = { ...f, [k]: v };
-      // Reset dependent fields if country changes
       if (k === "country") {
-        const ports = PORTS_BY_COUNTRY[v as string] || [];
-        next.origin = ports[0] || "";
-        next.destination = ports[1] || ports[0] || "";
+        const meta = META_DIRECTORIES[v as string];
+        next.city = meta?.cities[0] || "";
+        if (next.transport === "Road") {
+          next.origin = meta?.cities[0] || "";
+          next.destination = meta?.cities[1] || meta?.cities[0] || "";
+        } else if (next.transport === "Train") {
+          next.origin = meta?.stations[0] || "";
+          next.destination = meta?.stations[1] || meta?.stations[0] || "";
+        } else if (next.transport === "Air") {
+          next.origin = meta?.airports[0]?.code || "";
+          next.destination = meta?.airports[1]?.code || meta?.airports[0]?.code || "";
+        } else {
+          next.origin = meta?.ports[0] || "";
+          next.destination = meta?.ports[1] || meta?.ports[0] || "";
+        }
         const routes = ROUTES_BY_COUNTRY[v as string] || [];
         next.route = routes[0] || "";
+      } else if (k === "transport") {
+        const meta = META_DIRECTORIES[next.country];
+        if (v === "Road") {
+          next.origin = meta?.cities[0] || "";
+          next.destination = meta?.cities[1] || meta?.cities[0] || "";
+        } else if (v === "Train") {
+          next.origin = meta?.stations[0] || "";
+          next.destination = meta?.stations[1] || meta?.stations[0] || "";
+        } else if (v === "Air") {
+          next.origin = meta?.airports[0]?.code || "";
+          next.destination = meta?.airports[1]?.code || meta?.airports[0]?.code || "";
+        } else {
+          next.origin = meta?.ports[0] || "";
+          next.destination = meta?.ports[1] || meta?.ports[0] || "";
+        }
       }
       return next;
     });
@@ -125,9 +236,10 @@ function LoadRequestPage() {
       setForm({
         customer: "",
         country: "UAE",
+        city: "Dubai",
         transport: "Sea",
-        origin: "Jebel Ali",
-        destination: "DXB",
+        origin: "Jebel Ali Port",
+        destination: "Khalifa Port",
         loadType: "Container",
         incoterm: "FOB",
         route: "TR-001 · UAE Local Route",
@@ -182,7 +294,7 @@ function LoadRequestPage() {
                   <Input value={form.customer} onChange={(e) => set("customer", e.target.value)} placeholder="e.g. Aurora Trading LLC" className="w-full" />
                 </Field>
                 <Field label="Select Target Country">
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
                     {COUNTRIES.map((c) => (
                       <button key={c} type="button" onClick={() => set("country", c)}
                         className={`p-4 rounded-md border text-left flex flex-col gap-2 transition-all ${
@@ -193,6 +305,11 @@ function LoadRequestPage() {
                       </button>
                     ))}
                   </div>
+                </Field>
+                <Field label="Select City (Target Region)">
+                  <Select value={form.city} onChange={(e) => set("city", e.target.value)} className="w-full">
+                    {(META_DIRECTORIES[form.country]?.cities || []).map((ct) => <option key={ct}>{ct}</option>)}
+                  </Select>
                 </Field>
               </div>
             </Panel>
@@ -232,19 +349,66 @@ function LoadRequestPage() {
 
           {/* STEP 3: SELECT PORT & ROUTE */}
           {step === 3 && (
-            <Panel title={`Step 3: Select Port & Route (Filtered: ${form.country})`}>
+            <Panel title={`Step 3: Select Location & Route (Filtered: ${form.country})`}>
               <div className="space-y-5">
                 <div className="grid sm:grid-cols-2 gap-4">
-                  <Field label="Origin Port">
-                    <Select value={form.origin} onChange={(e) => set("origin", e.target.value)} className="w-full">
-                      {(PORTS_BY_COUNTRY[form.country] || []).map((p) => <option key={p}>{p}</option>)}
-                    </Select>
-                  </Field>
-                  <Field label="Destination Port">
-                    <Select value={form.destination} onChange={(e) => set("destination", e.target.value)} className="w-full">
-                      {(PORTS_BY_COUNTRY[form.country] || []).map((p) => <option key={p}>{p}</option>)}
-                    </Select>
-                  </Field>
+                  {form.transport === "Road" ? (
+                    <>
+                      <Field label="Origin City">
+                        <Select value={form.origin} onChange={(e) => set("origin", e.target.value)} className="w-full">
+                          {(META_DIRECTORIES[form.country]?.cities || []).map((c) => <option key={c}>{c}</option>)}
+                        </Select>
+                      </Field>
+                      <Field label="Destination City">
+                        <Select value={form.destination} onChange={(e) => set("destination", e.target.value)} className="w-full">
+                          {(META_DIRECTORIES[form.country]?.cities || []).map((c) => <option key={c}>{c}</option>)}
+                        </Select>
+                      </Field>
+                    </>
+                  ) : form.transport === "Train" ? (
+                    <>
+                      <Field label="Origin Train Station">
+                        <Select value={form.origin} onChange={(e) => set("origin", e.target.value)} className="w-full">
+                          {(META_DIRECTORIES[form.country]?.stations || []).map((s) => <option key={s}>{s}</option>)}
+                        </Select>
+                      </Field>
+                      <Field label="Destination Train Station">
+                        <Select value={form.destination} onChange={(e) => set("destination", e.target.value)} className="w-full">
+                          {(META_DIRECTORIES[form.country]?.stations || []).map((s) => <option key={s}>{s}</option>)}
+                        </Select>
+                      </Field>
+                    </>
+                  ) : form.transport === "Air" ? (
+                    <>
+                      <Field label="Origin Airport">
+                        <Select value={form.origin} onChange={(e) => set("origin", e.target.value)} className="w-full">
+                          {(META_DIRECTORIES[form.country]?.airports || []).map((a) => (
+                            <option key={a.code} value={a.code}>{a.code} - {a.name} ({a.type})</option>
+                          ))}
+                        </Select>
+                      </Field>
+                      <Field label="Destination Airport">
+                        <Select value={form.destination} onChange={(e) => set("destination", e.target.value)} className="w-full">
+                          {(META_DIRECTORIES[form.country]?.airports || []).map((a) => (
+                            <option key={a.code} value={a.code}>{a.code} - {a.name} ({a.type})</option>
+                          ))}
+                        </Select>
+                      </Field>
+                    </>
+                  ) : (
+                    <>
+                      <Field label="Origin Port">
+                        <Select value={form.origin} onChange={(e) => set("origin", e.target.value)} className="w-full">
+                          {(META_DIRECTORIES[form.country]?.ports || []).map((p) => <option key={p}>{p}</option>)}
+                        </Select>
+                      </Field>
+                      <Field label="Destination Port">
+                        <Select value={form.destination} onChange={(e) => set("destination", e.target.value)} className="w-full">
+                          {(META_DIRECTORIES[form.country]?.ports || []).map((p) => <option key={p}>{p}</option>)}
+                        </Select>
+                      </Field>
+                    </>
+                  )}
                 </div>
 
                 <Field label="Active Route (Filtered)">
@@ -291,7 +455,7 @@ function LoadRequestPage() {
                     <div className="text-[10px] font-mono text-primary uppercase tracking-wider">Auto-Assigned Agent</div>
                     <div className="font-semibold text-lg text-foreground mt-0.5">{autoAssignedAgent}</div>
                     <div className="text-xs text-muted-foreground mt-1">
-                      Assigned based on country <strong>{form.country}</strong>, transport mode <strong>{form.transport}</strong>, and origin port <strong>{form.origin}</strong>.
+                      Assigned based on country <strong>{form.country}</strong>, city <strong>{form.city}</strong>, transport mode <strong>{form.transport}</strong>, and origin <strong>{form.origin}</strong>.
                     </div>
                   </div>
                 </div>
@@ -300,19 +464,19 @@ function LoadRequestPage() {
                   <div className="text-xs font-mono text-muted-foreground uppercase tracking-wider mb-2">Final Summary Details</div>
                   <dl className="grid grid-cols-2 gap-3 text-sm">
                     <div>
-                      <dt className="text-[10px] font-mono uppercase text-muted-foreground">Country</dt>
-                      <dd className="font-semibold">{COUNTRY_FLAGS[form.country]} {form.country}</dd>
+                      <dt className="text-[10px] font-mono uppercase text-muted-foreground">Country & City</dt>
+                      <dd className="font-semibold">{COUNTRY_FLAGS[form.country]} {form.country} · {form.city}</dd>
                     </div>
                     <div>
                       <dt className="text-[10px] font-mono uppercase text-muted-foreground">Transport</dt>
                       <dd className="font-semibold">{form.transport}</dd>
                     </div>
                     <div>
-                      <dt className="text-[10px] font-mono uppercase text-muted-foreground">Origin Port</dt>
+                      <dt className="text-[10px] font-mono uppercase text-muted-foreground">Origin</dt>
                       <dd className="font-semibold">{form.origin}</dd>
                     </div>
                     <div>
-                      <dt className="text-[10px] font-mono uppercase text-muted-foreground">Destination Port</dt>
+                      <dt className="text-[10px] font-mono uppercase text-muted-foreground">Destination</dt>
                       <dd className="font-semibold">{form.destination}</dd>
                     </div>
                     <div>
@@ -375,6 +539,7 @@ function LoadRequestPage() {
             <dl className="text-sm space-y-2">
               <Row k="Customer" v={form.customer || "—"} />
               <Row k="Country" v={form.country} />
+              <Row k="City" v={form.city} />
               <Row k="Transport" v={form.transport} />
               <Row k="Origin" v={form.origin} />
               <Row k="Destination" v={form.destination} />

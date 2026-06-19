@@ -13,6 +13,14 @@ export const Route = createFileRoute("/broker-commission")({
 const BROKERS = ["Layla Hosseini", "Omar Al-Saud", "Mehmet Yilmaz", "Nadia Mansouri", "Hassan Khan"];
 const INCOTERMS = ["EXW", "FCA", "FAS", "FOB", "CFR", "CIF", "CPT", "CIP", "DPU", "DAP", "DDP"];
 
+const AGENT_ASSIGNMENTS: Record<string, { port: string; warehouse: string; company: string }> = {
+  "Layla Hosseini": { port: "Jebel Ali Port", warehouse: "Dubai Logistics Center", company: "TransGlobal Shipping" },
+  "Omar Al-Saud": { port: "Jebel Ali Port", warehouse: "Riyadh South Depot", company: "Afrilink Logistics" },
+  "Mehmet Yilmaz": { port: "Port of Istanbul", warehouse: "Istanbul Gateway Whse", company: "EurAsia Freighters" },
+  "Nadia Mansouri": { port: "Bandar Abbas Port", warehouse: "Tehran East Depot", company: "Blue Ocean Shipping" },
+  "Hassan Khan": { port: "Port of Karachi", warehouse: "Karachi Central Hub", company: "Pak-Iran Cargo" },
+};
+
 interface Row {
   id: string;
   broker: string;
@@ -98,6 +106,13 @@ function BrokerCommissionPage() {
               <div>
                 <div className="font-semibold text-sm text-foreground truncate">{b.name}</div>
                 <div className="text-[10px] font-mono text-muted-foreground uppercase mt-0.5">Logistic Broker</div>
+                {AGENT_ASSIGNMENTS[b.name] && (
+                  <div className="mt-2 space-y-0.5 text-[9px] font-mono text-primary border-t border-border/30 pt-2">
+                    <div className="truncate"><span className="text-muted-foreground">Port:</span> {AGENT_ASSIGNMENTS[b.name].port}</div>
+                    <div className="truncate"><span className="text-muted-foreground">Whse:</span> {AGENT_ASSIGNMENTS[b.name].warehouse}</div>
+                    <div className="truncate"><span className="text-muted-foreground">Co:</span> {AGENT_ASSIGNMENTS[b.name].company}</div>
+                  </div>
+                )}
               </div>
               <div className="space-y-2 mt-4 pt-3 border-t border-border">
                 <div className="flex justify-between text-xs">
@@ -157,7 +172,14 @@ function BrokerCommissionPage() {
               const earned = Math.round(r.loadValue * r.commissionPct / 100);
               return (
                 <TR key={r.id}>
-                  <TD className="font-medium">{r.broker}</TD>
+                  <TD>
+                    <div className="font-medium">{r.broker}</div>
+                    {AGENT_ASSIGNMENTS[r.broker] && (
+                      <div className="text-[9px] font-mono text-muted-foreground mt-0.5">
+                        {AGENT_ASSIGNMENTS[r.broker].port} · {AGENT_ASSIGNMENTS[r.broker].company}
+                      </div>
+                    )}
+                  </TD>
                   <TD className="font-mono text-xs">{r.bookingId}</TD>
                   <TD className="text-right font-mono">{formatMoney(r.loadValue)}</TD>
                   <TD className="font-mono text-xs">{r.incoterm}</TD>
