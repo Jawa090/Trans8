@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
-import { PageHeader, Panel, Btn, StatusBadge, Table, THead, TH, TR, TD, Avatar, Input, Select, Toggle, Modal, Field } from "@/components/admin/ui";
+import { PageHeader, Panel, Btn, StatusBadge, Table, THead, TH, TR, TD, Avatar, Input, Select, Toggle, Modal, Field, Drawer } from "@/components/admin/ui";
 import { toast } from "sonner";
+import { META_DIRECTORIES } from "./load-request";
+import { Anchor, Home, Building2, User, Activity, Percent } from "lucide-react";
 
 export const Route = createFileRoute("/agents")({
   head: () => ({ meta: [{ title: "Agents & Territories — TRANS8" }] }),
@@ -25,11 +27,9 @@ const SEED: Agent[] = [
   { id: "AG-1003", name: "Omar Al-Saud",   role: "Long Distance",   territory: "GCC · Riyadh",        txCount: 410, profitPct: 5.5, active: true,  initials: "OA", port: "Jebel Ali Port", warehouse: "Riyadh South Depot", company: "Afrilink Logistics" },
   { id: "AG-1004", name: "Hassan Khan",    role: "Local Transport", territory: "Pakistan · Karachi",  txCount: 287, profitPct: 6.0, active: true,  initials: "HK", port: "Port of Karachi", warehouse: "Karachi Central Hub", company: "Pak-Iran Cargo" },
   { id: "AG-1005", name: "Mehmet Yilmaz",  role: "Custom Agent",    territory: "Turkey · Istanbul",   txCount: 196, profitPct: 7.5, active: false, initials: "MY", port: "Port of Istanbul", warehouse: "Istanbul Gateway Whse", company: "EurAsia Freighters" },
-  { id: "AG-1006", name: "Ivan Volkov",    role: "Long Distance",   territory: "Russia · Moscow",     txCount: 152, profitPct: 6.0, active: true,  initials: "IV", port: "Port of Moscow", warehouse: "Moscow North Hub", company: "EurAsia Freighters" },
   { id: "AG-1007", name: "Nadia Mansouri", role: "Custom Agent",    territory: "Iran · Tehran",       txCount: 174, profitPct: 7.0, active: true,  initials: "NM", port: "Bandar Abbas Port", warehouse: "Tehran East Depot", company: "Blue Ocean Shipping" },
   { id: "AG-1008", name: "Fatima Aydin",   role: "Local Transport", territory: "South Africa · Durban", txCount: 98,  profitPct: 5.0, active: false, initials: "FA", port: "Port of Durban", warehouse: "Durban Harbor Whse", company: "Afrilink Logistics" },
   { id: "AG-1009", name: "Amir Rahimi",    role: "Long Distance",   territory: "UAE · Dubai",         txCount: 305, profitPct: 6.0, active: true,  initials: "AR", port: "Jebel Ali Port", warehouse: "Dubai Logistics Center", company: "Blue Ocean Shipping" },
-  { id: "AG-1010", name: "Sara Petrov",    role: "Custom Agent",    territory: "Russia · Moscow",     txCount: 88,  profitPct: 7.5, active: true,  initials: "SP", port: "Port of Moscow", warehouse: "Moscow North Hub", company: "TransGlobal Shipping" },
 ];
 
 function AgentsPage() {
@@ -38,14 +38,38 @@ function AgentsPage() {
   const [role, setRole] = useState<"all" | AgentRole>("all");
   const [terr, setTerr] = useState<string>("all");
   const [open, setOpen] = useState(false);
+  const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
+
+  // Flatten all unique ports from META_DIRECTORIES
+  const ALL_PORTS = useMemo(() => {
+    const portsSet = new Set<string>();
+    Object.values(META_DIRECTORIES).forEach((countryMeta) => {
+      countryMeta.ports.forEach((p) => portsSet.add(p));
+    });
+    return Array.from(portsSet);
+  }, []);
+
   const [draft, setDraft] = useState({
     name: "",
     role: "Local Transport" as AgentRole,
     territory: "UAE · Dubai",
-    port: "Jebel Ali Port",
-    warehouse: "Dubai Logistics Center",
-    company: "TransGlobal Shipping"
+    port: "",
+    warehouse: "",
+    company: ""
   });
+
+  // Set default port when opening invite
+  const handleOpenInvite = () => {
+    setDraft({
+      name: "",
+      role: "Local Transport",
+      territory: "UAE · Dubai",
+      port: ALL_PORTS[0] || "Jebel Ali Port",
+      warehouse: "",
+      company: ""
+    });
+    setOpen(true);
+  };
 
   const filtered = useMemo(() => agents.filter((a) =>
     (role === "all" || a.role === role) &&
@@ -63,6 +87,19 @@ function AgentsPage() {
       toast.error("Agent name is required");
       return;
     }
+    if (!draft.port) {
+      toast.error("Assigned port is required");
+      return;
+    }
+    if (!draft.warehouse.trim()) {
+      toast.error("Assigned warehouse is required");
+      return;
+    }
+    if (!draft.company.trim()) {
+      toast.error("Assigned company is required");
+      return;
+    }
+
     const initials = draft.name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
     const newAgent: Agent = {
       id: `AG-${1000 + agents.length + 1}`,
@@ -80,14 +117,6 @@ function AgentsPage() {
     setAgents([newAgent, ...agents]);
     toast.success(`Agent ${draft.name} invited successfully!`);
     setOpen(false);
-    setDraft({
-      name: "",
-      role: "Local Transport",
-      territory: "UAE · Dubai",
-      port: "Jebel Ali Port",
-      warehouse: "Dubai Logistics Center",
-      company: "TransGlobal Shipping"
-    });
   };
 
   const stats = useMemo(() => ({
@@ -101,7 +130,7 @@ function AgentsPage() {
       <PageHeader
         title="Agents & Territories"
         subtitle="Field operations network · roles, regions and participation"
-        actions={<Btn onClick={() => setOpen(true)}>+ Invite Agent</Btn>}
+        actions={<Btn onClick={handleOpenInvite}>+ Invite Agent</Btn>}
       />
 
       <div className="grid sm:grid-cols-3 gap-4 mb-6">
@@ -143,25 +172,25 @@ function AgentsPage() {
           </THead>
           <tbody>
             {filtered.map((a) => (
-              <TR key={a.id}>
+              <TR key={a.id} className="cursor-pointer hover:bg-[var(--surface-2)] transition-colors" onClick={() => setSelectedAgent(a)}>
                 <TD>
                   <div className="flex items-center gap-3">
                     <Avatar initials={a.initials} />
                     <div>
-                      <div className="font-medium">{a.name}</div>
+                      <div className="font-medium text-foreground">{a.name}</div>
                       <div className="text-[11px] font-mono text-muted-foreground">{a.id}</div>
                     </div>
                   </div>
                 </TD>
                 <TD>{a.role}</TD>
                 <TD>{a.territory}</TD>
-                <TD><span className="text-xs font-mono">{a.port}</span></TD>
+                <TD><span className="text-xs font-mono text-primary">{a.port}</span></TD>
                 <TD><span className="text-xs font-mono">{a.warehouse}</span></TD>
                 <TD><span className="text-xs text-muted-foreground">{a.company}</span></TD>
                 <TD className="text-right font-mono">{a.txCount.toLocaleString()}</TD>
                 <TD className="text-right font-mono text-[var(--accent-lime)]">{a.profitPct.toFixed(1)}%</TD>
-                <TD><StatusBadge status={a.active ? "Active" : "Suspended"} /></TD>
-                <TD className="text-right">
+                <TD onClick={(e) => e.stopPropagation()}><StatusBadge status={a.active ? "Active" : "Suspended"} /></TD>
+                <TD className="text-right" onClick={(e) => e.stopPropagation()}>
                   <div className="inline-flex items-center gap-2">
                     <Toggle on={a.active} onChange={() => toggle(a.id)} />
                   </div>
@@ -169,16 +198,19 @@ function AgentsPage() {
               </TR>
             ))}
             {filtered.length === 0 && (
-              <TR><TD className="text-center text-muted-foreground py-8">No agents match these filters.</TD><TD /><TD /><TD /><TD /><TD /><TD /><TD /><TD /><TD /></TR>
+              <TR><TD className="text-center text-muted-foreground py-8" colSpan={10}>No agents match these filters.</TD></TR>
             )}
           </tbody>
         </Table>
       </Panel>
 
+      {/* Invite Modal */}
       <Modal open={open} onClose={() => setOpen(false)} title="Invite Agent"
         footer={<><Btn variant="ghost" onClick={() => setOpen(false)}>Cancel</Btn><Btn onClick={invite}>Invite Agent</Btn></>}>
-        <div className="space-y-3">
-          <Field label="Agent Name"><Input className="w-full" value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} placeholder="e.g. Ali Reza" /></Field>
+        <div className="space-y-4">
+          <Field label="Agent Name">
+            <Input className="w-full" value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} placeholder="e.g. Ali Reza" />
+          </Field>
           <Field label="Role">
             <Select className="w-full" value={draft.role} onChange={(e) => setDraft({ ...draft, role: e.target.value as AgentRole })}>
               {ROLES.map((r) => <option key={r}>{r}</option>)}
@@ -189,39 +221,93 @@ function AgentsPage() {
               {TERRITORIES.map((t) => <option key={t}>{t}</option>)}
             </Select>
           </Field>
-          <Field label="Assigned Port">
+          <Field label="Assigned Port (Mandatory)">
             <Select className="w-full" value={draft.port} onChange={(e) => setDraft({ ...draft, port: e.target.value })}>
-              <option>Jebel Ali Port</option>
-              <option>Port of Karachi</option>
-              <option>Bandar Abbas Port</option>
-              <option>Port of Durban</option>
-              <option>Port of Istanbul</option>
-              <option>Port of Moscow</option>
-              <option>Mundra Port</option>
+              {ALL_PORTS.map((p) => <option key={p} value={p}>{p}</option>)}
             </Select>
           </Field>
-          <Field label="Assigned Warehouse">
-            <Select className="w-full" value={draft.warehouse} onChange={(e) => setDraft({ ...draft, warehouse: e.target.value })}>
-              <option>Dubai Logistics Center</option>
-              <option>Karachi Central Hub</option>
-              <option>Tehran East Depot</option>
-              <option>Durban Harbor Whse</option>
-              <option>Istanbul Gateway Whse</option>
-              <option>Moscow North Hub</option>
-              <option>Cape Town Whse</option>
-            </Select>
+          <Field label="Assigned Warehouse (Mandatory)">
+            <Input className="w-full" value={draft.warehouse} onChange={(e) => setDraft({ ...draft, warehouse: e.target.value })} placeholder="e.g. Tehran East Depot" />
           </Field>
-          <Field label="Assigned Company">
-            <Select className="w-full" value={draft.company} onChange={(e) => setDraft({ ...draft, company: e.target.value })}>
-              <option>TransGlobal Shipping</option>
-              <option>Pak-Iran Cargo</option>
-              <option>Afrilink Logistics</option>
-              <option>EurAsia Freighters</option>
-              <option>Blue Ocean Shipping</option>
-            </Select>
+          <Field label="Assigned Company (Mandatory)">
+            <Input className="w-full" value={draft.company} onChange={(e) => setDraft({ ...draft, company: e.target.value })} placeholder="e.g. Pak-Iran Cargo" />
           </Field>
         </div>
       </Modal>
+
+      {/* Agent Profile Drawer */}
+      <Drawer open={!!selectedAgent} onClose={() => setSelectedAgent(null)} title={selectedAgent ? `Agent Profile: ${selectedAgent.name}` : ""}>
+        {selectedAgent && (
+          <div className="space-y-6">
+            <div className="flex items-center gap-4 p-4 bg-[var(--surface-2)] border border-border rounded-lg">
+              <Avatar initials={selectedAgent.initials} className="h-16 w-16 text-lg" />
+              <div>
+                <h3 className="text-lg font-bold text-foreground">{selectedAgent.name}</h3>
+                <p className="text-xs text-muted-foreground font-mono">{selectedAgent.id}</p>
+                <div className="mt-2 flex gap-1.5">
+                  <span className="text-[10px] font-semibold bg-primary/10 border border-primary/20 text-primary px-2 py-0.5 rounded">
+                    {selectedAgent.role}
+                  </span>
+                  <StatusBadge status={selectedAgent.active ? "Active" : "Suspended"} />
+                </div>
+              </div>
+            </div>
+
+            <Panel title="Assignments & Territories">
+              <div className="space-y-4">
+                <div className="flex items-start gap-3 p-3 bg-[var(--surface-1)] border border-border rounded-md">
+                  <Anchor className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+                  <div>
+                    <div className="text-[10px] font-mono text-muted-foreground uppercase">Assigned Port</div>
+                    <div className="text-sm font-semibold text-foreground mt-0.5">{selectedAgent.port}</div>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-3 bg-[var(--surface-1)] border border-border rounded-md">
+                  <Home className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+                  <div>
+                    <div className="text-[10px] font-mono text-muted-foreground uppercase">Assigned Warehouse</div>
+                    <div className="text-sm font-semibold text-foreground mt-0.5">{selectedAgent.warehouse}</div>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-3 bg-[var(--surface-1)] border border-border rounded-md">
+                  <Building2 className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+                  <div>
+                    <div className="text-[10px] font-mono text-muted-foreground uppercase">Assigned Company</div>
+                    <div className="text-sm font-semibold text-foreground mt-0.5">{selectedAgent.company}</div>
+                  </div>
+                </div>
+              </div>
+            </Panel>
+
+            <Panel title="Performance & Wallet Metrics">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-[var(--surface-2)] border border-border rounded-md p-3">
+                  <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase text-muted-foreground">
+                    <Activity className="h-3 w-3" /> Shipments
+                  </div>
+                  <div className="text-lg font-mono font-bold mt-1 text-foreground">{selectedAgent.txCount.toLocaleString()}</div>
+                </div>
+
+                <div className="bg-[var(--surface-2)] border border-border rounded-md p-3">
+                  <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase text-muted-foreground">
+                    <Percent className="h-3 w-3" /> Profit Share
+                  </div>
+                  <div className="text-lg font-mono font-bold mt-1 text-[var(--accent-lime)]">{selectedAgent.profitPct.toFixed(1)}%</div>
+                </div>
+              </div>
+            </Panel>
+
+            <div className="pt-4 border-t border-border flex gap-2">
+              <Btn className="flex-1" onClick={() => { toggle(selectedAgent.id); setSelectedAgent({ ...selectedAgent, active: !selectedAgent.active }); }}>
+                {selectedAgent.active ? "Suspend Agent" : "Activate Agent"}
+              </Btn>
+              <Btn variant="secondary" onClick={() => setSelectedAgent(null)}>Close</Btn>
+            </div>
+          </div>
+        )}
+      </Drawer>
     </AdminLayout>
   );
 }

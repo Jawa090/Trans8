@@ -3,11 +3,12 @@ import { createFileRoute } from "@tanstack/react-router";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Panel, PageHeader, StatusBadge, Btn, Avatar, Tabs, Input, Select, Drawer, Table, THead, TH, TR, TD, Modal, Field } from "@/components/admin/ui";
 import { USERS, REGIONS, BOOKINGS, formatMoney, type User } from "@/lib/mock-data";
-import { Search, Filter, Download, Star } from "lucide-react";
+import { Search, Download, User as UserIcon, UploadCloud, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { META_DIRECTORIES } from "./load-request";
 
 export const Route = createFileRoute("/users")({
-  head: () => ({ meta: [{ title: "Users — Movers Admin" }] }),
+  head: () => ({ meta: [{ title: "Users — TRANS8 Admin" }] }),
   component: UsersPage,
 });
 
@@ -24,6 +25,7 @@ function UsersPage() {
 
   // Invite modal state
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [photoPreview, setPhotoPreview] = useState<string>("");
   const [draft, setDraft] = useState({
     name: "",
     email: "",
@@ -32,8 +34,54 @@ function UsersPage() {
     city: "Dubai",
     role: "Logistic Broker",
     activity: "Freight Tendering",
-    photoSeed: "user-" + Math.floor(Math.random() * 1000)
   });
+
+  const handleOpenInvite = () => {
+    setDraft({
+      name: "",
+      email: "",
+      phone: "",
+      region: "UAE",
+      city: "Dubai",
+      role: "Logistic Broker",
+      activity: "Freight Tendering",
+    });
+    setPhotoPreview("");
+    setInviteOpen(true);
+  };
+
+  // Map Region selection to country key for META_DIRECTORIES
+  const currentRegionKey = useMemo(() => {
+    if (draft.region.includes("UAE")) return "UAE";
+    if (draft.region.includes("Pakistan")) return "Pakistan";
+    if (draft.region.includes("Iran")) return "Iran";
+    if (draft.region.includes("South Africa")) return "South Africa";
+    if (draft.region.includes("Turkey")) return "Turkey";
+    if (draft.region.includes("India")) return "India";
+    return "UAE";
+  }, [draft.region]);
+
+  const citiesForRegion = useMemo(() => {
+    return META_DIRECTORIES[currentRegionKey]?.cities || [];
+  }, [currentRegionKey]);
+
+  // Handle region change in draft
+  const handleRegionChange = (newRegion: string) => {
+    let mappingKey = "UAE";
+    if (newRegion.includes("UAE")) mappingKey = "UAE";
+    else if (newRegion.includes("Pakistan")) mappingKey = "Pakistan";
+    else if (newRegion.includes("Iran")) mappingKey = "Iran";
+    else if (newRegion.includes("South Africa")) mappingKey = "South Africa";
+    else if (newRegion.includes("Turkey")) mappingKey = "Turkey";
+    else if (newRegion.includes("India")) mappingKey = "India";
+
+    const defaultCity = META_DIRECTORIES[mappingKey]?.cities[0] || "Dubai";
+    setDraft({
+      ...draft,
+      region: newRegion,
+      city: defaultCity
+    });
+  };
 
   const filtered = useMemo(() => usersList.filter((u) => {
     if (tab === "Networked Users" && u.kind !== "Networked") return false;
@@ -52,7 +100,19 @@ function UsersPage() {
       toast.error("Name and Email are required");
       return;
     }
-    const isNetworked = ["Logistic Broker", "Port Agent", "Custom Agent", "Logistics Partner"].includes(draft.role);
+    const isNetworked = [
+      "Logistic Broker", 
+      "Port Agent", 
+      "Custom Agent", 
+      "Road Logistics Partner", 
+      "Rail Logistics Partner", 
+      "Sea Logistics Partner", 
+      "Air Logistics Partner", 
+      "Driver", 
+      "Warehouse", 
+      "Survey Agent"
+    ].includes(draft.role);
+
     const newUser: User = {
       id: `USR-${Math.floor(Math.random() * 90000 + 10000)}`,
       name: draft.name,
@@ -63,7 +123,7 @@ function UsersPage() {
       kind: isNetworked ? "Networked" : "System",
       role: draft.role,
       activity: draft.activity,
-      photo: `https://api.dicebear.com/7.x/adventurer/svg?seed=${draft.photoSeed}`,
+      photo: photoPreview || `https://api.dicebear.com/7.x/adventurer/svg?seed=${draft.name}`,
       status: "Active",
       joined: new Date().toISOString().split("T")[0],
       avatar: draft.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2),
@@ -75,17 +135,6 @@ function UsersPage() {
     setUsersList([newUser, ...usersList]);
     setInviteOpen(false);
     toast.success(`Invited user ${draft.name} as ${draft.role}`);
-    // reset draft
-    setDraft({
-      name: "",
-      email: "",
-      phone: "",
-      region: "UAE",
-      city: "Dubai",
-      role: "Logistic Broker",
-      activity: "Freight Tendering",
-      photoSeed: "user-" + Math.floor(Math.random() * 1000)
-    });
   };
 
   return (
@@ -93,7 +142,7 @@ function UsersPage() {
       <PageHeader title="Users" subtitle={`${filtered.length} accounts across the network`}
         actions={<>
           <Btn variant="secondary" onClick={() => toast.success(`Exported ${filtered.length} users to CSV`)}><Download className="h-4 w-4" />Export</Btn>
-          <Btn onClick={() => setInviteOpen(true)}>+ Invite User</Btn>
+          <Btn onClick={handleOpenInvite}>+ Invite User</Btn>
         </>} />
 
       <Tabs tabs={["All", "Networked Users", "System Users"]} active={tab} onChange={(t) => { setTab(t); setPage(1); }} />
@@ -105,10 +154,13 @@ function UsersPage() {
         </div>
         <Select value={region} onChange={(e) => setRegion(e.target.value)}>
           <option value="">All regions</option>
-          {REGIONS.map((r) => <option key={r.code}>{r.name}</option>)}
+          {REGIONS.map((r) => <option key={r.code} value={r.name}>{r.name}</option>)}
         </Select>
         <Select value={status} onChange={(e) => setStatus(e.target.value)}>
-          <option value="">Any status</option><option>Active</option><option>Pending</option><option>Suspended</option>
+          <option value="">Any status</option>
+          <option>Active</option>
+          <option>Pending</option>
+          <option>Suspended</option>
         </Select>
         {selected.length > 0 && (
           <div className="flex items-center gap-2 ml-auto px-3 py-1.5 rounded-md bg-primary/10 border border-primary/30">
@@ -125,16 +177,18 @@ function UsersPage() {
       </div>
 
       <Table>
-        <THead><TR>
-          <TH><input type="checkbox" className="accent-[var(--primary)]" onChange={(e) => setSelected(e.target.checked ? paged.map((u) => u.id) : [])} /></TH>
-          <TH>User</TH>
-          <TH>Region / City</TH>
-          <TH>Role / Activity</TH>
-          <TH>Phone</TH>
-          <TH>Status</TH>
-          <TH>Joined</TH>
-          <TH>Actions</TH>
-        </TR></THead>
+        <THead>
+          <TR>
+            <TH><input type="checkbox" className="accent-[var(--primary)]" onChange={(e) => setSelected(e.target.checked ? paged.map((u) => u.id) : [])} /></TH>
+            <TH>User</TH>
+            <TH>Region / City</TH>
+            <TH>Role / Activity</TH>
+            <TH>Phone</TH>
+            <TH>Status</TH>
+            <TH>Joined</TH>
+            <TH>Actions</TH>
+          </TR>
+        </THead>
         <tbody>
           {paged.map((u) => (
             <TR key={u.id}>
@@ -144,7 +198,7 @@ function UsersPage() {
                 <div className="flex items-center gap-3">
                   <Avatar initials={u.avatar} photo={u.photo} />
                   <div>
-                    <div className="font-medium">{u.name}</div>
+                    <div className="font-medium text-foreground">{u.name}</div>
                     <div className="text-[11px] font-mono text-muted-foreground">{u.id}</div>
                   </div>
                 </div>
@@ -200,12 +254,14 @@ function UsersPage() {
           </Field>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Region">
-              <Select className="w-full" value={draft.region} onChange={(e) => setDraft({ ...draft, region: e.target.value })}>
+              <Select className="w-full" value={draft.region} onChange={(e) => handleRegionChange(e.target.value)}>
                 {REGIONS.map((r) => <option key={r.code} value={r.name}>{r.name}</option>)}
               </Select>
             </Field>
             <Field label="City">
-              <Input className="w-full" value={draft.city} onChange={(e) => setDraft({ ...draft, city: e.target.value })} placeholder="e.g. Dubai" />
+              <Select className="w-full" value={draft.city} onChange={(e) => setDraft({ ...draft, city: e.target.value })}>
+                {citiesForRegion.map((city) => <option key={city} value={city}>{city}</option>)}
+              </Select>
             </Field>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -214,21 +270,65 @@ function UsersPage() {
                 <option value="Logistic Broker">Logistic Broker</option>
                 <option value="Port Agent">Port Agent</option>
                 <option value="Custom Agent">Custom Agent</option>
-                <option value="Logistics Partner">Logistics Partner</option>
+                <option value="Road Logistics Partner">Road Logistics Partner</option>
+                <option value="Rail Logistics Partner">Rail Logistics Partner</option>
+                <option value="Sea Logistics Partner">Sea Logistics Partner</option>
+                <option value="Air Logistics Partner">Air Logistics Partner</option>
                 <option value="Driver">Driver</option>
-                <option value="Agent">Agent</option>
+                <option value="Warehouse">Warehouse</option>
+                <option value="Survey Agent">Survey Agent</option>
                 <option value="Admin">Admin</option>
-                <option value="Shipping">Shipping</option>
               </Select>
             </Field>
             <Field label="Specific Activity">
               <Input className="w-full" value={draft.activity} onChange={(e) => setDraft({ ...draft, activity: e.target.value })} placeholder="e.g. Customs Clearance" />
             </Field>
           </div>
-          <Field label="Profile Avatar Seed (Dicebear)">
-            <div className="flex gap-2 items-center">
-              <Input className="flex-1" value={draft.photoSeed} onChange={(e) => setDraft({ ...draft, photoSeed: e.target.value })} />
-              <img src={`https://api.dicebear.com/7.x/adventurer/svg?seed=${draft.photoSeed}`} alt="Preview" className="h-9 w-9 bg-[var(--surface-3)] rounded border border-border" />
+
+          <Field label="Profile Photo Upload">
+            <div className="flex gap-4 items-center p-3 bg-[var(--surface-2)] border border-border rounded-lg">
+              <div className="h-16 w-16 bg-[var(--surface-3)] rounded border border-border overflow-hidden flex items-center justify-center shrink-0">
+                {photoPreview ? (
+                  <img src={photoPreview} alt="Preview" className="h-full w-full object-cover" />
+                ) : (
+                  <UserIcon className="h-8 w-8 text-muted-foreground" />
+                )}
+              </div>
+              <div className="flex-1">
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setPhotoPreview(URL.createObjectURL(file));
+                    }
+                  }} 
+                  className="hidden" 
+                  id="profile-photo-upload" 
+                />
+                <div className="flex gap-2">
+                  <Btn 
+                    type="button" 
+                    variant="secondary" 
+                    onClick={() => document.getElementById("profile-photo-upload")?.click()}
+                    className="h-8 text-xs"
+                  >
+                    <UploadCloud className="h-3.5 w-3.5 mr-1" /> Choose File
+                  </Btn>
+                  {photoPreview && (
+                    <Btn 
+                      type="button" 
+                      variant="danger" 
+                      onClick={() => setPhotoPreview("")}
+                      className="h-8 px-2 text-xs"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Btn>
+                  )}
+                </div>
+                <div className="text-[10px] text-muted-foreground mt-1.5">PNG, JPG or SVG. Max 2MB.</div>
+              </div>
             </div>
           </Field>
         </div>
@@ -240,7 +340,7 @@ function UsersPage() {
             <div className="flex items-center gap-4">
               <Avatar initials={drawer.avatar} photo={drawer.photo} size={64} />
               <div>
-                <div className="text-lg font-display font-bold">{drawer.name}</div>
+                <div className="text-lg font-display font-bold text-foreground">{drawer.name}</div>
                 <div className="text-xs font-mono text-muted-foreground">{drawer.email}</div>
                 <div className="mt-1"><StatusBadge status={drawer.status} /></div>
               </div>
@@ -295,7 +395,7 @@ function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="bg-[var(--surface-2)] border border-border rounded-md p-3">
       <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">{label}</div>
-      <div className="font-mono text-lg mt-1">{value}</div>
+      <div className="font-mono text-sm font-semibold text-foreground mt-1">{value}</div>
     </div>
   );
 }

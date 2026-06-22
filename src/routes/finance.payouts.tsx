@@ -4,7 +4,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { PageHeader, Panel, Table, THead, TH, TR, TD, Btn, StatusBadge, Input, Select } from "@/components/admin/ui";
 import { formatMoney } from "@/lib/mock-data";
-import { Search, DollarSign, CheckCircle2, AlertCircle } from "lucide-react";
+import { Search, DollarSign, CheckCircle2, AlertCircle, RefreshCw, XCircle } from "lucide-react";
 
 export const Route = createFileRoute("/finance/payouts")({
   head: () => ({ meta: [{ title: "Payouts — TRANS8 Admin" }] }),
@@ -16,17 +16,17 @@ interface Payout {
   agentName: string;
   agentType: string;
   amountEarned: number;
-  status: "Pending Approval" | "Approved" | "Paid";
+  status: "Pending Approval" | "Paid" | "Rejected";
   date: string;
 }
 
 const INITIAL_PAYOUTS: Payout[] = [
   { id: "PAY-001", agentName: "Ali Yilmaz", agentType: "Logistic Broker", amountEarned: 2450, status: "Pending Approval", date: "2026-06-20" },
   { id: "PAY-002", agentName: "Reza Karimi", agentType: "Port Agent", amountEarned: 1850, status: "Pending Approval", date: "2026-06-21" },
-  { id: "PAY-003", agentName: "Omar Khan", agentType: "Custom Agent", amountEarned: 3200, status: "Approved", date: "2026-06-18" },
-  { id: "PAY-004", agentName: "Zara Naidoo", agentType: "Warehouse Agent", amountEarned: 950, status: "Paid", date: "2026-06-15" },
+  { id: "PAY-003", agentName: "Omar Khan", agentType: "Custom Agent", amountEarned: 3200, status: "Pending Approval", date: "2026-06-18" },
+  { id: "PAY-004", agentName: "Zara Naidoo", agentType: "Warehouse", amountEarned: 950, status: "Paid", date: "2026-06-15" },
   { id: "PAY-005", agentName: "Sergei Volkov", agentType: "Road Logistics Partner", amountEarned: 4200, status: "Pending Approval", date: "2026-06-22" },
-  { id: "PAY-006", agentName: "Nadia Mansouri", agentType: "Survey Agent", amountEarned: 1150, status: "Approved", date: "2026-06-19" },
+  { id: "PAY-006", agentName: "Nadia Mansouri", agentType: "Survey Agent", amountEarned: 1150, status: "Rejected", date: "2026-06-19" },
   { id: "PAY-007", agentName: "Hassan Al-Saud", agentType: "Sea Logistics Partner", amountEarned: 5800, status: "Paid", date: "2026-06-12" },
 ];
 
@@ -44,25 +44,35 @@ function PayoutsPage() {
   const handleApprove = (id: string) => {
     setRows((prev) =>
       prev.map((item) =>
-        item.id === id ? { ...item, status: "Approved" } : item
-      )
-    );
-    const item = rows.find(r => r.id === id);
-    toast.success(`Payout request ${id} for ${item?.agentName} has been Approved. Ready for wallet credit.`);
-  };
-
-  const handleCreditWallet = (id: string) => {
-    setRows((prev) =>
-      prev.map((item) =>
         item.id === id ? { ...item, status: "Paid" } : item
       )
     );
     const item = rows.find(r => r.id === id);
-    toast.success(`Wallet credited: ${formatMoney(item?.amountEarned || 0)} successfully paid to ${item?.agentName}'s wallet.`);
+    toast.success(`Payout approved and successfully credited to wallet: ${formatMoney(item?.amountEarned || 0)} for ${item?.agentName}`);
+  };
+
+  const handleReject = (id: string) => {
+    setRows((prev) =>
+      prev.map((item) =>
+        item.id === id ? { ...item, status: "Rejected" } : item
+      )
+    );
+    const item = rows.find(r => r.id === id);
+    toast.error(`Payout request ${id} for ${item?.agentName} has been Rejected.`);
+  };
+
+  const handleResetToPending = (id: string) => {
+    setRows((prev) =>
+      prev.map((item) =>
+        item.id === id ? { ...item, status: "Pending Approval" } : item
+      )
+    );
+    const item = rows.find(r => r.id === id);
+    toast.info(`Payout request ${id} for ${item?.agentName} reset back to Pending Approval.`);
   };
 
   const pendingCount = rows.filter((r) => r.status === "Pending Approval").length;
-  const approvedCount = rows.filter((r) => r.status === "Approved").length;
+  const rejectedCount = rows.filter((r) => r.status === "Rejected").length;
   const paidCount = rows.filter((r) => r.status === "Paid").length;
   const totalPaidAmount = rows
     .filter((r) => r.status === "Paid")
@@ -70,20 +80,20 @@ function PayoutsPage() {
 
   return (
     <AdminLayout>
-      <PageHeader title="Payouts" subtitle="Approve payouts and manually credit agent wallets" />
+      <PageHeader title="Payouts" subtitle="Review agent payout requests and manually settle balances" />
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-5">
         <Panel>
           <Stat label="Pending Approval" value={String(pendingCount)} icon={<AlertCircle className="h-5 w-5 text-[var(--warning)]" />} />
         </Panel>
         <Panel>
-          <Stat label="Approved (Unpaid)" value={String(approvedCount)} icon={<CheckCircle2 className="h-5 w-5 text-[var(--info)]" />} />
+          <Stat label="Rejected Requests" value={String(rejectedCount)} icon={<XCircle className="h-5 w-5 text-[var(--danger)]" />} />
         </Panel>
         <Panel>
-          <Stat label="Paid out" value={String(paidCount)} icon={<CheckCircle2 className="h-5 w-5 text-[var(--accent-lime)]" />} />
+          <Stat label="Paid / Settled" value={String(paidCount)} icon={<CheckCircle2 className="h-5 w-5 text-[var(--accent-lime)]" />} />
         </Panel>
         <Panel>
-          <Stat label="Total Credited" value={formatMoney(totalPaidAmount)} icon={<DollarSign className="h-5 w-5 text-primary" />} />
+          <Stat label="Total Wallet Credited" value={formatMoney(totalPaidAmount)} icon={<DollarSign className="h-5 w-5 text-primary" />} />
         </Panel>
       </div>
 
@@ -95,8 +105,8 @@ function PayoutsPage() {
         <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
           <option value="">Any status</option>
           <option value="Pending Approval">Pending Approval</option>
-          <option value="Approved">Approved</option>
           <option value="Paid">Paid</option>
+          <option value="Rejected">Rejected</option>
         </Select>
       </div>
 
@@ -116,7 +126,7 @@ function PayoutsPage() {
           {filtered.map((t) => (
             <TR key={t.id}>
               <TD className="font-mono text-xs text-primary">{t.id}</TD>
-              <TD className="font-semibold">{t.agentName}</TD>
+              <TD className="font-semibold text-foreground">{t.agentName}</TD>
               <TD className="text-xs text-muted-foreground font-mono uppercase">{t.agentType}</TD>
               <TD className="font-mono text-xs">{t.date}</TD>
               <TD><StatusBadge status={t.status} /></TD>
@@ -124,24 +134,32 @@ function PayoutsPage() {
               <TD className="text-right">
                 <div className="flex gap-2 justify-end">
                   {t.status === "Pending Approval" && (
-                    <Btn className="h-7 px-3 text-xs" onClick={() => handleApprove(t.id)}>
-                      Approve
-                    </Btn>
+                    <>
+                      <Btn className="h-7 px-3 text-xs" onClick={() => handleApprove(t.id)}>
+                        Approve
+                      </Btn>
+                      <Btn variant="danger" className="h-7 px-3 text-xs" onClick={() => handleReject(t.id)}>
+                        Reject
+                      </Btn>
+                    </>
                   )}
-                  {t.status === "Approved" && (
-                    <Btn variant="secondary" className="h-7 px-3 text-xs" onClick={() => handleCreditWallet(t.id)}>
-                      Credit Wallet
+                  {t.status === "Rejected" && (
+                    <Btn variant="secondary" className="h-7 px-3 text-xs gap-1" onClick={() => handleResetToPending(t.id)}>
+                      <RefreshCw className="h-3 w-3" /> Reset to Pending
                     </Btn>
                   )}
                   {t.status === "Paid" && (
-                    <span className="text-[10px] font-mono uppercase text-[var(--accent-lime)] px-2 py-1 bg-primary/10 rounded border border-primary/20">
-                      Settled ✓
+                    <span className="text-[10px] font-mono uppercase text-[var(--accent-lime)] px-2.5 py-1 bg-primary/10 rounded border border-primary/20">
+                      Wallet Credited ✓
                     </span>
                   )}
                 </div>
               </TD>
             </TR>
           ))}
+          {filtered.length === 0 && (
+            <TR><TD className="text-center text-muted-foreground py-8" colSpan={7}>No payout requests found.</TD></TR>
+          )}
         </tbody>
       </Table>
     </AdminLayout>

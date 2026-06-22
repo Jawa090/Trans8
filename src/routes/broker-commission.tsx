@@ -1,12 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
-import { PageHeader, Panel, Btn, StatusBadge, Table, THead, TH, TR, TD, Input, Select } from "@/components/admin/ui";
+import { PageHeader, Panel, Btn, StatusBadge, Table, THead, TH, TR, TD, Input, Drawer } from "@/components/admin/ui";
 import { formatMoney } from "@/lib/mock-data";
 import { toast } from "sonner";
+import { Users, DollarSign, Wallet, FileSpreadsheet } from "lucide-react";
 
 export const Route = createFileRoute("/broker-commission")({
-  head: () => ({ meta: [{ title: "Broker Commission — TRANS8" }] }),
+  head: () => ({ meta: [{ title: "Broker Commission Summary — TRANS8" }] }),
   component: BrokerCommissionPage,
 });
 
@@ -21,7 +22,7 @@ const AGENT_ASSIGNMENTS: Record<string, { port: string; warehouse: string; compa
   "Hassan Khan": { port: "Port of Karachi", warehouse: "Karachi Central Hub", company: "Pak-Iran Cargo" },
 };
 
-interface Row {
+interface Transaction {
   id: string;
   broker: string;
   bookingId: string;
@@ -30,185 +31,266 @@ interface Row {
   commissionPct: number;
   transportCommission: number;
   paid: boolean;
+  date: string;
 }
 
-function build(): Row[] {
-  let seed = 7;
+function buildTransactions(): Transaction[] {
+  let seed = 42;
   const r = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
-  return Array.from({ length: 18 }, (_, i) => {
-    const loadValue = Math.floor(r() * 28000) + 2000;
-    const pct = +(2 + r() * 6).toFixed(1);
+  return Array.from({ length: 35 }, (_, i) => {
+    const loadValue = Math.floor(r() * 25000) + 4000;
+    const pct = +(3 + r() * 5).toFixed(1);
     const incoterm = INCOTERMS[Math.floor(r() * INCOTERMS.length)];
+    const daysAgo = Math.floor(r() * 30);
+    const date = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
     return {
-      id: `CM-${5021 + i}`,
+      id: `CM-${5000 + i}`,
       broker: BROKERS[Math.floor(r() * BROKERS.length)],
-      bookingId: `BK-${20418 + i}`,
+      bookingId: `BK-${20000 + i}`,
       loadValue,
       incoterm,
       commissionPct: pct,
-      transportCommission: Math.floor(loadValue * (1 + r() * 2.5) / 100),
-      paid: r() > 0.45,
+      transportCommission: Math.floor(loadValue * (1.2 + r() * 2) / 100),
+      paid: r() > 0.4,
+      date,
     };
   });
 }
 
-const BROKER_STATS = [
-  { name: "Layla Hosseini", shipments: 142, successRate: "98.6%", avgCommission: "4.8%", rating: "4.9" },
-  { name: "Omar Al-Saud", shipments: 98, successRate: "95.4%", avgCommission: "5.2%", rating: "4.7" },
-  { name: "Mehmet Yilmaz", shipments: 115, successRate: "97.1%", avgCommission: "4.5%", rating: "4.8" },
-  { name: "Nadia Mansouri", shipments: 87, successRate: "94.2%", avgCommission: "5.0%", rating: "4.6" },
-  { name: "Hassan Khan", shipments: 164, successRate: "99.1%", avgCommission: "4.2%", rating: "4.9" }
-];
-
 function BrokerCommissionPage() {
-  const [rows, setRows] = useState<Row[]>(() => build());
+  const [transactions, setTransactions] = useState<Transaction[]>(() => buildTransactions());
   const [q, setQ] = useState("");
-  const [broker, setBroker] = useState("all");
-  const [status, setStatus] = useState<"all" | "Paid" | "Pending">("all");
+  const [selectedBrokerName, setSelectedBrokerName] = useState<string | null>(null);
 
-  const filtered = useMemo(() => rows.filter((r) =>
-    (broker === "all" || r.broker === broker) &&
-    (status === "all" || (status === "Paid" ? r.paid : !r.paid)) &&
-    (q === "" || r.broker.toLowerCase().includes(q.toLowerCase()) || r.bookingId.toLowerCase().includes(q.toLowerCase()))
-  ), [rows, broker, status, q]);
-
-  const totals = useMemo(() => {
-    const earned = filtered.reduce((s, r) => s + Math.round(r.loadValue * r.commissionPct / 100), 0);
-    const transport = filtered.reduce((s, r) => s + r.transportCommission, 0);
-    const pending = filtered.filter((r) => !r.paid).reduce((s, r) => s + Math.round(r.loadValue * r.commissionPct / 100), 0);
-    return { earned, transport, pending };
-  }, [filtered]);
-
-  const markPaid = (id: string) => {
-    setRows((prev) => prev.map((r) => r.id === id ? { ...r, paid: true } : r));
-    toast.success("Commission marked as paid");
+  const brokerIds: Record<string, string> = {
+    "Layla Hosseini": "BRK-201",
+    "Omar Al-Saud": "BRK-202",
+    "Mehmet Yilmaz": "BRK-203",
+    "Nadia Mansouri": "BRK-204",
+    "Hassan Khan": "BRK-205",
   };
+
+  // Group transactions by broker
+  const brokerSummaries = useMemo(() => {
+    const map: Record<string, {
+      brokerName: string;
+      brokerId: string;
+      shipmentsCount: number;
+      totalLoadValue: number;
+      totalCommission: number;
+      totalPending: number;
+      avgCommissionPct: number;
+      transactions: Transaction[];
+    }> = {};
+
+    BROKERS.forEach((name) => {
+      map[name] = {
+        brokerName: name,
+        brokerId: brokerIds[name] || "BRK-999",
+        shipmentsCount: 0,
+        totalLoadValue: 0,
+        totalCommission: 0,
+        totalPending: 0,
+        avgCommissionPct: 0,
+        transactions: [],
+      };
+    });
+
+    transactions.forEach((tx) => {
+      const b = map[tx.broker];
+      if (b) {
+        b.shipmentsCount++;
+        b.totalLoadValue += tx.loadValue;
+        const commAmount = Math.round(tx.loadValue * tx.commissionPct / 100);
+        b.totalCommission += commAmount;
+        if (!tx.paid) {
+          b.totalPending += commAmount;
+        }
+        b.transactions.push(tx);
+      }
+    });
+
+    // Calculate averages
+    Object.values(map).forEach((b) => {
+      if (b.shipmentsCount > 0) {
+        const sumPct = b.transactions.reduce((sum, t) => sum + t.commissionPct, 0);
+        b.avgCommissionPct = +(sumPct / b.shipmentsCount).toFixed(1);
+      }
+    });
+
+    return Object.values(map).filter(b => 
+      b.brokerName.toLowerCase().includes(q.toLowerCase()) || 
+      b.brokerId.toLowerCase().includes(q.toLowerCase())
+    );
+  }, [transactions, q]);
+
+  // Overall statistics
+  const stats = useMemo(() => {
+    const totalEarned = transactions.reduce((s, r) => s + Math.round(r.loadValue * r.commissionPct / 100), 0);
+    const pendingPayout = transactions.filter((r) => !r.paid).reduce((s, r) => s + Math.round(r.loadValue * r.commissionPct / 100), 0);
+    const settledPayout = totalEarned - pendingPayout;
+    return { totalEarned, pendingPayout, settledPayout };
+  }, [transactions]);
+
+  const markPaid = (txId: string) => {
+    setTransactions((prev) => prev.map((tx) => tx.id === txId ? { ...tx, paid: true } : tx));
+    toast.success(`Commission ${txId} marked as paid successfully`);
+  };
+
+  const selectedBrokerDetails = useMemo(() => {
+    if (!selectedBrokerName) return null;
+    const details = transactions.filter(t => t.broker === selectedBrokerName);
+    return {
+      name: selectedBrokerName,
+      id: brokerIds[selectedBrokerName] || "BRK-999",
+      transactions: details,
+      assignment: AGENT_ASSIGNMENTS[selectedBrokerName]
+    };
+  }, [transactions, selectedBrokerName]);
 
   return (
     <AdminLayout>
       <PageHeader
-        title="Broker Commission"
-        subtitle="Earnings, payouts and reconciliation across brokers"
-        actions={<Btn variant="secondary" onClick={() => toast.success("CSV exported (demo)")}>Export CSV</Btn>}
+        title="Broker Commission Summary"
+        subtitle="Consolidated earnings, load value and payout settlements grouped by agent"
+        actions={<Btn variant="secondary" onClick={() => toast.success("Summary report exported to CSV")}><FileSpreadsheet className="h-4 w-4 mr-1.5" />Export Summary</Btn>}
       />
 
       <div className="grid sm:grid-cols-3 gap-4 mb-6">
-        <KPI label="Commission earned" value={formatMoney(totals.earned)} />
-        <KPI label="Transport commission" value={formatMoney(totals.transport)} />
-        <KPI label="Pending payout" value={formatMoney(totals.pending)} warn />
+        <KPI label="Total commission earned" value={formatMoney(stats.totalEarned)} icon={<DollarSign className="h-5 w-5 text-primary" />} />
+        <KPI label="Pending payout balance" value={formatMoney(stats.pendingPayout)} icon={<Wallet className="h-5 w-5 text-[var(--warning)]" />} warn />
+        <KPI label="Settled commissions" value={formatMoney(stats.settledPayout)} icon={<Users className="h-5 w-5 text-[var(--accent-lime)]" />} />
       </div>
 
-      {/* Past Performance Records */}
-      <Panel title="Past Performance Records" className="mb-6">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-          {BROKER_STATS.map((b) => (
-            <div key={b.name} className="bg-[var(--surface-2)] border border-border rounded-lg p-4 flex flex-col justify-between hover:border-primary/50 transition-colors">
-              <div>
-                <div className="font-semibold text-sm text-foreground truncate">{b.name}</div>
-                <div className="text-[10px] font-mono text-muted-foreground uppercase mt-0.5">Logistic Broker</div>
-                {AGENT_ASSIGNMENTS[b.name] && (
-                  <div className="mt-2 space-y-0.5 text-[9px] font-mono text-primary border-t border-border/30 pt-2">
-                    <div className="truncate"><span className="text-muted-foreground">Port:</span> {AGENT_ASSIGNMENTS[b.name].port}</div>
-                    <div className="truncate"><span className="text-muted-foreground">Whse:</span> {AGENT_ASSIGNMENTS[b.name].warehouse}</div>
-                    <div className="truncate"><span className="text-muted-foreground">Co:</span> {AGENT_ASSIGNMENTS[b.name].company}</div>
-                  </div>
-                )}
-              </div>
-              <div className="space-y-2 mt-4 pt-3 border-t border-border">
-                <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">Shipments</span>
-                  <span className="font-mono font-bold text-foreground">{b.shipments}</span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">Success Rate</span>
-                  <span className="font-mono font-bold text-[var(--accent-lime)]">{b.successRate}</span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">Avg Comm</span>
-                  <span className="font-mono font-bold text-foreground">{b.avgCommission}</span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">Rating</span>
-                  <span className="font-mono font-bold text-[var(--warning)]">{b.rating} ★</span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </Panel>
-
       <Panel
-        title="Commission ledger"
+        title="Broker Performance Summary"
         action={
-          <div className="flex flex-wrap gap-2">
-            <Input placeholder="Search broker / booking…" value={q} onChange={(e) => setQ(e.target.value)} className="w-60" />
-            <Select value={broker} onChange={(e) => setBroker(e.target.value)}>
-              <option value="all">All brokers</option>
-              {BROKERS.map((b) => <option key={b}>{b}</option>)}
-            </Select>
-            <Select value={status} onChange={(e) => setStatus(e.target.value as "all" | "Paid" | "Pending")}>
-              <option value="all">All status</option>
-              <option>Paid</option>
-              <option>Pending</option>
-            </Select>
-          </div>
+          <Input placeholder="Search broker by name or ID…" value={q} onChange={(e) => setQ(e.target.value)} className="w-60" />
         }
       >
         <Table>
           <THead>
             <tr>
-              <TH>Broker name</TH>
-              <TH>Booking ID</TH>
-              <TH className="text-right">Load value</TH>
-              <TH>Incoterm</TH>
-              <TH className="text-right">Commission%</TH>
-              <TH className="text-right">Amount</TH>
-              <TH>Status</TH>
+              <TH>Broker Details</TH>
+              <TH>Assigned Location</TH>
+              <TH className="text-right">Shipments</TH>
+              <TH className="text-right">Load Value Handled</TH>
+              <TH className="text-right">Avg Commission %</TH>
+              <TH className="text-right">Total Commission</TH>
+              <TH className="text-right">Pending Payout</TH>
               <TH className="text-right">Action</TH>
             </tr>
           </THead>
           <tbody>
-            {filtered.map((r) => {
-              const earned = Math.round(r.loadValue * r.commissionPct / 100);
-              return (
-                <TR key={r.id}>
-                  <TD>
-                    <div className="font-medium">{r.broker}</div>
-                    {AGENT_ASSIGNMENTS[r.broker] && (
-                      <div className="text-[9px] font-mono text-muted-foreground mt-0.5">
-                        {AGENT_ASSIGNMENTS[r.broker].port} · {AGENT_ASSIGNMENTS[r.broker].company}
-                      </div>
-                    )}
-                  </TD>
-                  <TD className="font-mono text-xs">{r.bookingId}</TD>
-                  <TD className="text-right font-mono">{formatMoney(r.loadValue)}</TD>
-                  <TD className="font-mono text-xs">{r.incoterm}</TD>
-                  <TD className="text-right font-mono">{r.commissionPct.toFixed(1)}%</TD>
-                  <TD className="text-right font-mono text-[var(--accent-lime)]">{formatMoney(earned)}</TD>
-                  <TD><StatusBadge status={r.paid ? "Completed" : "Pending"} /></TD>
-                  <TD className="text-right">
-                    {r.paid
-                      ? <span className="text-xs text-muted-foreground">Paid</span>
-                      : <Btn variant="secondary" onClick={() => markPaid(r.id)}>Mark paid</Btn>}
-                  </TD>
-                </TR>
-              );
-            })}
-            {filtered.length === 0 && (
-              <TR><TD className="text-center text-muted-foreground py-8">No commissions match these filters.</TD><TD /><TD /><TD /><TD /><TD /><TD /><TD /><TD /></TR>
+            {brokerSummaries.map((b) => (
+              <TR key={b.brokerId} className="cursor-pointer hover:bg-[var(--surface-2)] transition-colors" onClick={() => setSelectedBrokerName(b.brokerName)}>
+                <TD>
+                  <div>
+                    <div className="font-semibold text-foreground hover:text-primary transition-colors">{b.brokerName}</div>
+                    <div className="text-[10px] font-mono text-muted-foreground">{b.brokerId}</div>
+                  </div>
+                </TD>
+                <TD>
+                  {AGENT_ASSIGNMENTS[b.brokerName] ? (
+                    <div className="text-xs">
+                      <div>{AGENT_ASSIGNMENTS[b.brokerName].port}</div>
+                      <div className="text-muted-foreground text-[10px]">{AGENT_ASSIGNMENTS[b.brokerName].company}</div>
+                    </div>
+                  ) : "—"}
+                </TD>
+                <TD className="text-right font-mono">{b.shipmentsCount}</TD>
+                <TD className="text-right font-mono text-foreground">{formatMoney(b.totalLoadValue)}</TD>
+                <TD className="text-right font-mono">{b.avgCommissionPct.toFixed(1)}%</TD>
+                <TD className="text-right font-mono text-[var(--accent-lime)] font-semibold">{formatMoney(b.totalCommission)}</TD>
+                <TD className="text-right font-mono text-[var(--warning)]">{formatMoney(b.totalPending)}</TD>
+                <TD className="text-right" onClick={(e) => e.stopPropagation()}>
+                  <Btn variant="ghost" className="h-7 px-3 text-xs" onClick={() => setSelectedBrokerName(b.brokerName)}>
+                    View Ledger
+                  </Btn>
+                </TD>
+              </TR>
+            ))}
+            {brokerSummaries.length === 0 && (
+              <TR><TD className="text-center text-muted-foreground py-8" colSpan={8}>No brokers match the query.</TD></TR>
             )}
           </tbody>
         </Table>
       </Panel>
+
+      {/* Broker Ledger Drawer */}
+      <Drawer open={!!selectedBrokerName} onClose={() => setSelectedBrokerName(null)} title={selectedBrokerDetails ? `Ledger: ${selectedBrokerDetails.name} (${selectedBrokerDetails.id})` : ""}>
+        {selectedBrokerDetails && (
+          <div className="space-y-5">
+            {selectedBrokerDetails.assignment && (
+              <div className="p-3 bg-[var(--surface-2)] border border-border rounded-md text-xs space-y-1">
+                <div><span className="text-muted-foreground">Assigned Port:</span> <strong className="text-foreground">{selectedBrokerDetails.assignment.port}</strong></div>
+                <div><span className="text-muted-foreground">Warehouse Depot:</span> <strong className="text-foreground">{selectedBrokerDetails.assignment.warehouse}</strong></div>
+                <div><span className="text-muted-foreground">Associated Company:</span> <strong className="text-foreground">{selectedBrokerDetails.assignment.company}</strong></div>
+              </div>
+            )}
+
+            <div className="text-xs font-semibold text-muted-foreground uppercase font-mono tracking-wider">Past Transaction History</div>
+            
+            <div className="max-h-[60vh] overflow-y-auto pr-1">
+              <Table>
+                <THead>
+                  <tr>
+                    <TH>Txn ID</TH>
+                    <TH>Booking ID</TH>
+                    <TH className="text-right">Load Value</TH>
+                    <TH>Incoterm</TH>
+                    <TH className="text-right">Rate</TH>
+                    <TH className="text-right font-bold">Commission</TH>
+                    <TH>Status</TH>
+                    <TH className="text-right">Action</TH>
+                  </tr>
+                </THead>
+                <tbody>
+                  {selectedBrokerDetails.transactions.map((t) => {
+                    const commissionAmount = Math.round(t.loadValue * t.commissionPct / 100);
+                    return (
+                      <TR key={t.id}>
+                        <TD className="font-mono text-[10px] text-primary">{t.id}</TD>
+                        <TD className="font-mono text-xs">{t.bookingId}</TD>
+                        <TD className="text-right font-mono text-xs">{formatMoney(t.loadValue)}</TD>
+                        <TD className="font-mono text-xs">{t.incoterm}</TD>
+                        <TD className="text-right font-mono text-xs">{t.commissionPct.toFixed(1)}%</TD>
+                        <TD className="text-right font-mono text-xs text-[var(--accent-lime)] font-bold">{formatMoney(commissionAmount)}</TD>
+                        <TD><StatusBadge status={t.paid ? "Completed" : "Pending"} /></TD>
+                        <TD className="text-right">
+                          {t.paid ? (
+                            <span className="text-xs text-muted-foreground font-medium">Paid</span>
+                          ) : (
+                            <Btn variant="secondary" className="h-6 px-2 text-[10px]" onClick={() => markPaid(t.id)}>
+                              Mark paid
+                            </Btn>
+                          )}
+                        </TD>
+                      </TR>
+                    );
+                  })}
+                </tbody>
+              </Table>
+            </div>
+            
+            <div className="pt-3 border-t border-border flex justify-end">
+              <Btn variant="secondary" onClick={() => setSelectedBrokerName(null)}>Close Ledger</Btn>
+            </div>
+          </div>
+        )}
+      </Drawer>
     </AdminLayout>
   );
 }
 
-function KPI({ label, value, warn }: { label: string; value: string; warn?: boolean }) {
+function KPI({ label, value, icon, warn }: { label: string; value: string; icon?: React.ReactNode; warn?: boolean }) {
   return (
-    <div className="bg-[var(--surface-1)] border border-border rounded-lg p-4">
-      <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">{label}</div>
-      <div className={`font-mono text-2xl font-bold mt-1 ${warn ? "text-[var(--warning)]" : ""}`}>{value}</div>
+    <div className="bg-[var(--surface-1)] border border-border rounded-lg p-4 flex items-center justify-between">
+      <div>
+        <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">{label}</div>
+        <div className={`font-mono text-2xl font-bold mt-1 ${warn ? "text-[var(--warning)]" : "text-foreground"}`}>{value}</div>
+      </div>
+      {icon && <div className="p-2 bg-[var(--surface-2)] border border-border rounded-md">{icon}</div>}
     </div>
   );
 }

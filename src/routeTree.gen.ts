@@ -26,6 +26,7 @@ import { Route as UsersTruckOwnersRouteImport } from './routes/users.truck-owner
 import { Route as UsersCustomersRouteImport } from './routes/users.customers'
 import { Route as SettingsRegionsRouteImport } from './routes/settings.regions'
 import { Route as SettingsLanguagesRouteImport } from './routes/settings.languages'
+import { Route as SettingsBillingRouteImport } from './routes/settings.billing'
 import { Route as SettingsAdminsRouteImport } from './routes/settings.admins'
 import { Route as OperationsTripsRouteImport } from './routes/operations.trips'
 import { Route as OperationsLoadsRouteImport } from './routes/operations.loads'
@@ -128,6 +129,11 @@ const SettingsRegionsRoute = SettingsRegionsRouteImport.update({
 const SettingsLanguagesRoute = SettingsLanguagesRouteImport.update({
   id: '/languages',
   path: '/languages',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsBillingRoute = SettingsBillingRouteImport.update({
+  id: '/billing',
+  path: '/billing',
   getParentRoute: () => SettingsRoute,
 } as any)
 const SettingsAdminsRoute = SettingsAdminsRouteImport.update({
@@ -252,6 +258,7 @@ export interface FileRoutesByFullPath {
   '/operations/loads': typeof OperationsLoadsRoute
   '/operations/trips': typeof OperationsTripsRoute
   '/settings/admins': typeof SettingsAdminsRoute
+  '/settings/billing': typeof SettingsBillingRoute
   '/settings/languages': typeof SettingsLanguagesRoute
   '/settings/regions': typeof SettingsRegionsRoute
   '/users/customers': typeof UsersCustomersRoute
@@ -289,6 +296,7 @@ export interface FileRoutesByTo {
   '/operations/loads': typeof OperationsLoadsRoute
   '/operations/trips': typeof OperationsTripsRoute
   '/settings/admins': typeof SettingsAdminsRoute
+  '/settings/billing': typeof SettingsBillingRoute
   '/settings/languages': typeof SettingsLanguagesRoute
   '/settings/regions': typeof SettingsRegionsRoute
   '/users/customers': typeof UsersCustomersRoute
@@ -327,6 +335,7 @@ export interface FileRoutesById {
   '/operations/loads': typeof OperationsLoadsRoute
   '/operations/trips': typeof OperationsTripsRoute
   '/settings/admins': typeof SettingsAdminsRoute
+  '/settings/billing': typeof SettingsBillingRoute
   '/settings/languages': typeof SettingsLanguagesRoute
   '/settings/regions': typeof SettingsRegionsRoute
   '/users/customers': typeof UsersCustomersRoute
@@ -366,6 +375,7 @@ export interface FileRouteTypes {
     | '/operations/loads'
     | '/operations/trips'
     | '/settings/admins'
+    | '/settings/billing'
     | '/settings/languages'
     | '/settings/regions'
     | '/users/customers'
@@ -403,6 +413,7 @@ export interface FileRouteTypes {
     | '/operations/loads'
     | '/operations/trips'
     | '/settings/admins'
+    | '/settings/billing'
     | '/settings/languages'
     | '/settings/regions'
     | '/users/customers'
@@ -440,6 +451,7 @@ export interface FileRouteTypes {
     | '/operations/loads'
     | '/operations/trips'
     | '/settings/admins'
+    | '/settings/billing'
     | '/settings/languages'
     | '/settings/regions'
     | '/users/customers'
@@ -597,6 +609,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsLanguagesRouteImport
       parentRoute: typeof SettingsRoute
     }
+    '/settings/billing': {
+      id: '/settings/billing'
+      path: '/billing'
+      fullPath: '/settings/billing'
+      preLoaderRoute: typeof SettingsBillingRouteImport
+      parentRoute: typeof SettingsRoute
+    }
     '/settings/admins': {
       id: '/settings/admins'
       path: '/admins'
@@ -743,12 +762,14 @@ const FinanceRouteWithChildren =
 
 interface SettingsRouteChildren {
   SettingsAdminsRoute: typeof SettingsAdminsRoute
+  SettingsBillingRoute: typeof SettingsBillingRoute
   SettingsLanguagesRoute: typeof SettingsLanguagesRoute
   SettingsRegionsRoute: typeof SettingsRegionsRoute
 }
 
 const SettingsRouteChildren: SettingsRouteChildren = {
   SettingsAdminsRoute: SettingsAdminsRoute,
+  SettingsBillingRoute: SettingsBillingRoute,
   SettingsLanguagesRoute: SettingsLanguagesRoute,
   SettingsRegionsRoute: SettingsRegionsRoute,
 }
