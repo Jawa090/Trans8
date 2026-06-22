@@ -4,10 +4,10 @@ import type { ReactNode } from "react";
 export function StatusBadge({ status }: { status: string }) {
   const s = status.toLowerCase();
   let cls = "bg-[var(--surface-3)] text-muted-foreground border-border";
-  if (["active", "completed", "delivered", "on trip"].includes(s)) cls = "bg-primary/15 text-[var(--accent-lime)] border-primary/30";
-  else if (["pending", "confirmed", "idle"].includes(s)) cls = "bg-[var(--warning)]/15 text-[var(--warning)] border-[var(--warning)]/30";
+  if (["active", "completed", "delivered", "on trip", "paid"].includes(s)) cls = "bg-primary/15 text-[var(--accent-lime)] border-primary/30";
+  else if (["pending", "confirmed", "idle", "pending approval"].includes(s)) cls = "bg-[var(--warning)]/15 text-[var(--warning)] border-[var(--warning)]/30";
   else if (["suspended", "failed", "cancelled"].includes(s)) cls = "bg-[var(--danger)]/15 text-[var(--danger)] border-[var(--danger)]/30";
-  else if (["in transit", "loaded", "at port"].includes(s)) cls = "bg-[var(--info)]/15 text-[var(--info)] border-[var(--info)]/30";
+  else if (["in transit", "loaded", "at port", "approved"].includes(s)) cls = "bg-[var(--info)]/15 text-[var(--info)] border-[var(--info)]/30";
   else if (["maintenance"].includes(s)) cls = "bg-[var(--warning)]/15 text-[var(--warning)] border-[var(--warning)]/30";
   return (
     <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-medium uppercase tracking-wider border ${cls}`}>
@@ -16,7 +16,6 @@ export function StatusBadge({ status }: { status: string }) {
     </span>
   );
 }
-
 /* Card */
 export function Panel({ title, action, children, className = "" }: {
   title?: ReactNode; action?: ReactNode; children: ReactNode; className?: string;

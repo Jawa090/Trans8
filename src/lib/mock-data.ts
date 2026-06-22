@@ -162,8 +162,8 @@ export const BOOKINGS: Booking[] = Array.from({ length: 60 }, (_, i) => {
 export const TRANSACTIONS = Array.from({ length: 30 }, (_, i) => ({
   id: `TXN-${(70112 + i).toString()}`,
   user: `${srand(FIRST)} ${srand(LAST)}`,
-  type: srand(["Payment", "Payout", "Refund", "Commission"]),
-  gateway: srand(["Stripe", "bKash", "Razorpay", "Flutterwave", "Paystack", "SSLCommerz", "Paypal"]),
+  type: srand(["Payment", "Refund", "Commission"]),
+  gateway: srand(["SDK Finance (Primary)", "Bank Transfer", "Crypto (USDT/ETH)"]),
   amount: Math.floor(seeded() * 8400) + 50,
   status: srand(["Completed", "Completed", "Pending", "Failed"]),
   date: `2026-06-${String(Math.floor(seeded() * 4) + 1).padStart(2, "0")}`,
@@ -213,9 +213,9 @@ export const LANGUAGES = [
 ];
 
 export const PAYMENT_GATEWAYS = [
-  { name: "Stripe", on: true }, { name: "bKash", on: true }, { name: "Paypal", on: false },
-  { name: "Razorpay", on: true }, { name: "Flutterwave", on: true }, { name: "Paystack", on: false },
-  { name: "SSLCommerz", on: true },
+  { name: "SDK Finance (Primary)", on: true },
+  { name: "Bank Transfer", on: true },
+  { name: "Crypto (USDT/ETH)", on: true },
 ];
 
 export const ADMIN_USERS = [

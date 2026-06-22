@@ -4,72 +4,88 @@ import { createFileRoute } from "@tanstack/react-router";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { PageHeader, Panel, Btn, Input } from "@/components/admin/ui";
 import { REGIONS } from "@/lib/mock-data";
+import { Percent, Shield, Landmark } from "lucide-react";
 
-const TRANSPORT_TYPES = ["Road", "Train", "Air", "Sea"];
 const AGENT_TYPES = [
-  "Logistic Broker",
-  "Port Agent",
-  "Custom Agent",
-  "Logistics Partner",
-  "Insurance Agent",
-  "Survey Agent",
-  "Warehouse Agent"
+  { key: "logisticBroker", label: "Logistic Broker %" },
+  { key: "portAgent", label: "Port Agent %" },
+  { key: "customAgent", label: "Custom Agent %" },
+  { key: "roadLogisticsPartner", label: "Road Logistics Partner %" },
+  { key: "railLogisticsPartner", label: "Rail Logistics Partner %" },
+  { key: "seaLogisticsPartner", label: "Sea Logistics Partner %" },
+  { key: "airLogisticsPartner", label: "Air Logistics Partner %" },
+  { key: "driver", label: "Driver %" },
+  { key: "warehouse", label: "Warehouse %" },
+  { key: "surveyAgent", label: "Survey Agent %" },
 ];
 
 export const Route = createFileRoute("/finance/commission")({
-  head: () => ({ meta: [{ title: "Commission — TRANS8" }] }),
+  head: () => ({ meta: [{ title: "Commission Settings — TRANS8 Admin" }] }),
   component: CommissionSettingsPage,
 });
 
 function CommissionSettingsPage() {
+  // Initialize rates per region
   const [rates, setRates] = useState<Record<string, Record<string, number>>>(() => {
-    const r: Record<string, Record<string, number>> = {};
+    const initialRates: Record<string, Record<string, number>> = {};
     REGIONS.forEach((reg, idx) => {
-      r[reg.code] = {};
-      TRANSPORT_TYPES.forEach((t, i) => { r[reg.code][t] = 4 + ((idx + i) % 9); });
-      AGENT_TYPES.forEach((a, i) => { r[reg.code][a] = +(1.5 + ((idx + i) % 4) * 0.5).toFixed(1); });
+      initialRates[reg.code] = {};
+      AGENT_TYPES.forEach((agent, i) => {
+        // Generate realistic default values
+        initialRates[reg.code][agent.key] = +(2.5 + ((idx + i) % 5) * 0.5).toFixed(1);
+      });
     });
-    return r;
+    return initialRates;
   });
+
+  const handleSave = (regionName: string, regionCode: string) => {
+    toast.success(`${regionName} commission rates saved successfully!`);
+  };
 
   return (
     <AdminLayout>
-      <PageHeader title="Commission Settings" subtitle="Per-region commission settings for Transport Types & Agent Types" />
+      <PageHeader title="Commission Settings" subtitle="Configure commission rates for logistics agents and partners by region" />
+      
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         {REGIONS.map((r) => (
-          <Panel key={r.code} title={<><span className="text-base">{r.flag}</span> <span className="font-semibold">{r.name} Rates</span></>}>
-            <div className="grid sm:grid-cols-2 gap-6">
-              <div>
-                <h4 className="text-xs font-mono uppercase tracking-wider text-primary mb-3">Transport Commission</h4>
-                <div className="space-y-3">
-                  {TRANSPORT_TYPES.map((t) => (
-                    <div key={t} className="flex items-center gap-3">
-                      <span className="text-xs font-mono text-muted-foreground w-24 truncate">{t}</span>
-                      <Input type="number" step="0.1" value={rates[r.code]?.[t] ?? 0} className="w-24 text-right"
-                        onChange={(e) => setRates({ ...rates, [r.code]: { ...rates[r.code], [t]: Number(e.target.value) } })} />
-                      <span className="text-xs text-muted-foreground">%</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <h4 className="text-xs font-mono uppercase tracking-wider text-primary mb-3">Agent Commission</h4>
-                <div className="space-y-3">
-                  {AGENT_TYPES.map((a) => (
-                    <div key={a} className="flex items-center gap-3">
-                      <span className="text-xs font-mono text-muted-foreground w-28 truncate">{a}</span>
-                      <Input type="number" step="0.1" value={rates[r.code]?.[a] ?? 0} className="w-24 text-right"
-                        onChange={(e) => setRates({ ...rates, [r.code]: { ...rates[r.code], [a]: Number(e.target.value) } })} />
-                      <span className="text-xs text-muted-foreground">%</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+          <Panel key={r.code} title={
+            <div className="flex items-center gap-2">
+              <span className="text-base">{r.flag}</span>
+              <span className="font-semibold text-foreground">{r.name} Rates</span>
             </div>
+          }>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {AGENT_TYPES.map((agent) => (
+                <div key={agent.key} className="flex items-center justify-between p-2.5 bg-[var(--surface-2)] border border-border rounded-md hover:border-primary/30 transition-colors">
+                  <span className="text-xs font-medium text-foreground">{agent.label}</span>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      max="100"
+                      value={rates[r.code]?.[agent.key] ?? 0}
+                      className="w-20 text-right"
+                      onChange={(e) => {
+                        const val = parseFloat(e.target.value) || 0;
+                        setRates({
+                          ...rates,
+                          [r.code]: {
+                            ...rates[r.code],
+                            [agent.key]: val,
+                          },
+                        });
+                      }}
+                    />
+                    <Percent className="h-3 w-3 text-muted-foreground" />
+                  </div>
+                </div>
+              ))}
+            </div>
+
             <div className="mt-6 pt-4 border-t border-border flex justify-end">
-              <Btn onClick={() => toast.success(`${r.name} commission configuration saved successfully!`)}>
-                Save Changes
+              <Btn onClick={() => handleSave(r.name, r.code)}>
+                Save {r.name} Settings
               </Btn>
             </div>
           </Panel>
