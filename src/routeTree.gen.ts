@@ -21,6 +21,9 @@ import { Route as BookingsRouteImport } from './routes/bookings'
 import { Route as AgentsRouteImport } from './routes/agents'
 import { Route as AccessRouteImport } from './routes/access'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as UsersIndexRouteImport } from './routes/users.index'
+import { Route as SettingsIndexRouteImport } from './routes/settings.index'
+import { Route as FinanceIndexRouteImport } from './routes/finance.index'
 import { Route as UsersWarehousesRouteImport } from './routes/users.warehouses'
 import { Route as UsersTruckOwnersRouteImport } from './routes/users.truck-owners'
 import { Route as UsersCustomersRouteImport } from './routes/users.customers'
@@ -105,6 +108,21 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const UsersIndexRoute = UsersIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => UsersRoute,
+} as any)
+const SettingsIndexRoute = SettingsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const FinanceIndexRoute = FinanceIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => FinanceRoute,
 } as any)
 const UsersWarehousesRoute = UsersWarehousesRouteImport.update({
   id: '/warehouses',
@@ -264,6 +282,9 @@ export interface FileRoutesByFullPath {
   '/users/customers': typeof UsersCustomersRoute
   '/users/truck-owners': typeof UsersTruckOwnersRoute
   '/users/warehouses': typeof UsersWarehousesRoute
+  '/finance/': typeof FinanceIndexRoute
+  '/settings/': typeof SettingsIndexRoute
+  '/users/': typeof UsersIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -271,13 +292,10 @@ export interface FileRoutesByTo {
   '/agents': typeof AgentsRoute
   '/bookings': typeof BookingsRoute
   '/broker-commission': typeof BrokerCommissionRoute
-  '/finance': typeof FinanceRouteWithChildren
   '/load-request': typeof LoadRequestRoute
   '/login': typeof LoginRoute
   '/ports': typeof PortsRoute
-  '/settings': typeof SettingsRouteWithChildren
   '/tracking': typeof TrackingRoute
-  '/users': typeof UsersRouteWithChildren
   '/content/banners': typeof ContentBannersRoute
   '/content/help': typeof ContentHelpRoute
   '/content/notifications': typeof ContentNotificationsRoute
@@ -302,6 +320,9 @@ export interface FileRoutesByTo {
   '/users/customers': typeof UsersCustomersRoute
   '/users/truck-owners': typeof UsersTruckOwnersRoute
   '/users/warehouses': typeof UsersWarehousesRoute
+  '/finance': typeof FinanceIndexRoute
+  '/settings': typeof SettingsIndexRoute
+  '/users': typeof UsersIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -341,6 +362,9 @@ export interface FileRoutesById {
   '/users/customers': typeof UsersCustomersRoute
   '/users/truck-owners': typeof UsersTruckOwnersRoute
   '/users/warehouses': typeof UsersWarehousesRoute
+  '/finance/': typeof FinanceIndexRoute
+  '/settings/': typeof SettingsIndexRoute
+  '/users/': typeof UsersIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -381,6 +405,9 @@ export interface FileRouteTypes {
     | '/users/customers'
     | '/users/truck-owners'
     | '/users/warehouses'
+    | '/finance/'
+    | '/settings/'
+    | '/users/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -388,13 +415,10 @@ export interface FileRouteTypes {
     | '/agents'
     | '/bookings'
     | '/broker-commission'
-    | '/finance'
     | '/load-request'
     | '/login'
     | '/ports'
-    | '/settings'
     | '/tracking'
-    | '/users'
     | '/content/banners'
     | '/content/help'
     | '/content/notifications'
@@ -419,6 +443,9 @@ export interface FileRouteTypes {
     | '/users/customers'
     | '/users/truck-owners'
     | '/users/warehouses'
+    | '/finance'
+    | '/settings'
+    | '/users'
   id:
     | '__root__'
     | '/'
@@ -457,6 +484,9 @@ export interface FileRouteTypes {
     | '/users/customers'
     | '/users/truck-owners'
     | '/users/warehouses'
+    | '/finance/'
+    | '/settings/'
+    | '/users/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -573,6 +603,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/users/': {
+      id: '/users/'
+      path: '/'
+      fullPath: '/users/'
+      preLoaderRoute: typeof UsersIndexRouteImport
+      parentRoute: typeof UsersRoute
+    }
+    '/settings/': {
+      id: '/settings/'
+      path: '/'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof SettingsIndexRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/finance/': {
+      id: '/finance/'
+      path: '/'
+      fullPath: '/finance/'
+      preLoaderRoute: typeof FinanceIndexRouteImport
+      parentRoute: typeof FinanceRoute
     }
     '/users/warehouses': {
       id: '/users/warehouses'
@@ -749,12 +800,14 @@ interface FinanceRouteChildren {
   FinanceCommissionRoute: typeof FinanceCommissionRoute
   FinanceGatewaysRoute: typeof FinanceGatewaysRoute
   FinancePayoutsRoute: typeof FinancePayoutsRoute
+  FinanceIndexRoute: typeof FinanceIndexRoute
 }
 
 const FinanceRouteChildren: FinanceRouteChildren = {
   FinanceCommissionRoute: FinanceCommissionRoute,
   FinanceGatewaysRoute: FinanceGatewaysRoute,
   FinancePayoutsRoute: FinancePayoutsRoute,
+  FinanceIndexRoute: FinanceIndexRoute,
 }
 
 const FinanceRouteWithChildren =
@@ -765,6 +818,7 @@ interface SettingsRouteChildren {
   SettingsBillingRoute: typeof SettingsBillingRoute
   SettingsLanguagesRoute: typeof SettingsLanguagesRoute
   SettingsRegionsRoute: typeof SettingsRegionsRoute
+  SettingsIndexRoute: typeof SettingsIndexRoute
 }
 
 const SettingsRouteChildren: SettingsRouteChildren = {
@@ -772,6 +826,7 @@ const SettingsRouteChildren: SettingsRouteChildren = {
   SettingsBillingRoute: SettingsBillingRoute,
   SettingsLanguagesRoute: SettingsLanguagesRoute,
   SettingsRegionsRoute: SettingsRegionsRoute,
+  SettingsIndexRoute: SettingsIndexRoute,
 }
 
 const SettingsRouteWithChildren = SettingsRoute._addFileChildren(
@@ -782,12 +837,14 @@ interface UsersRouteChildren {
   UsersCustomersRoute: typeof UsersCustomersRoute
   UsersTruckOwnersRoute: typeof UsersTruckOwnersRoute
   UsersWarehousesRoute: typeof UsersWarehousesRoute
+  UsersIndexRoute: typeof UsersIndexRoute
 }
 
 const UsersRouteChildren: UsersRouteChildren = {
   UsersCustomersRoute: UsersCustomersRoute,
   UsersTruckOwnersRoute: UsersTruckOwnersRoute,
   UsersWarehousesRoute: UsersWarehousesRoute,
+  UsersIndexRoute: UsersIndexRoute,
 }
 
 const UsersRouteWithChildren = UsersRoute._addFileChildren(UsersRouteChildren)

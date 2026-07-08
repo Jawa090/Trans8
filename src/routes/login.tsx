@@ -16,6 +16,8 @@ function LoginPage() {
   const [password, setPassword] = useState("admin123");
   const [loading, setLoading] = useState(false);
 
+  const [demoTab, setDemoTab] = useState<"Core" | "Managers" | "Supervisors" | "Agents">("Core");
+
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -29,6 +31,22 @@ function LoginPage() {
   };
 
   const useDemo = (e: string, p: string) => { setEmail(e); setPassword(p); };
+
+  const filteredDemos = DEMO_ACCOUNTS.filter(a => {
+    if (demoTab === "Core") {
+      return ["Super Admin", "Broker", "Transporter", "Custom Agent", "Client"].includes(a.user.role);
+    }
+    if (demoTab === "Managers") {
+      return a.user.role.endsWith("Manager");
+    }
+    if (demoTab === "Supervisors") {
+      return a.user.role.endsWith("Supervisor") || a.user.role === "Area Manager";
+    }
+    if (demoTab === "Agents") {
+      return a.user.role.endsWith("Agent") && a.user.role !== "Custom Agent";
+    }
+    return false;
+  });
 
   return (
     <div className="min-h-screen bg-background text-foreground grid lg:grid-cols-2">
@@ -72,8 +90,23 @@ function LoginPage() {
 
           <div className="mt-8">
             <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mb-3">Demo accounts · click to fill</div>
-            <div className="grid gap-2">
-              {DEMO_ACCOUNTS.map((a) => (
+            
+            {/* Demo Sub-Tabs */}
+            <div className="flex border-b border-border mb-3 overflow-x-auto text-[10px] font-mono uppercase tracking-wider gap-3 pb-1">
+              {(["Core", "Managers", "Supervisors", "Agents"] as const).map(t => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setDemoTab(t)}
+                  className={`pb-1 hover:text-primary transition-colors whitespace-nowrap ${demoTab === t ? "text-primary border-b-2 border-primary" : "text-muted-foreground"}`}
+                >
+                  {t === "Core" ? "Core Roles" : t}
+                </button>
+              ))}
+            </div>
+
+            <div className="grid gap-2 max-h-[300px] overflow-y-auto pr-1">
+              {filteredDemos.map((a) => (
                 <button key={a.email} onClick={() => useDemo(a.email, a.password)}
                   className="flex items-center justify-between text-left p-3 rounded-md border border-border bg-[var(--surface-1)] hover:border-primary transition-colors">
                   <div>
