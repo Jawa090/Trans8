@@ -100,6 +100,11 @@ function TenderPage() {
                   action={<StatusBadge status={aw ? "Confirmed" : "Pending"} />}>
                   <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mb-4">
                     <span>{b.cargo}</span>
+                    {b.hsCode && (
+                      <span className="text-[10px] bg-primary/10 border border-primary/20 px-1.5 py-0.5 rounded text-primary font-mono font-semibold">
+                        HS {b.hsCode}
+                      </span>
+                    )}
                     <span className="text-border">|</span>
                     <span className="font-mono">{b.weight}</span>
                     <span className="text-border">|</span>
@@ -128,11 +133,15 @@ function TenderPage() {
                         ) : (
                           <div className="flex gap-1">
                             <Btn className="h-8 px-3 text-xs" disabled={!!aw}
-                              onClick={() => { setAwarded({ ...awarded, [b.id]: o.carrierId }); toast.success(`Tender successfully awarded for Request ${b.id} to ${o.carrierName}`); }}>
+                              onClick={() => {
+                                setAwarded({ ...awarded, [b.id]: o.carrierId });
+                                toast.success(`Tender successfully awarded for Request ${b.id} to ${o.carrierName}`);
+                                toast.info(`Email Notification Triggered: Contract dispatched to ${o.carrierName.toLowerCase().replace(/\s+/g, "")}@trans8-partners.net`);
+                              }}>
                               Award
                             </Btn>
                             <Btn variant="ghost" className="h-8 px-2 text-xs" disabled={!!aw}
-                              onClick={() => { setSkipped({ ...skipped, [b.id]: [...(skipped[b.id] ?? []), o.carrierId] }); toast(`Tender skipped for ${o.carrierName}`); }}>
+                              onClick={() => { setSkipped({ ...skipped, [b.id]: [...(skipped[b.id] ?? []), o.carrierId] }); toast(`Tender carrier skipped for ${o.carrierName}`); }}>
                               Skip
                             </Btn>
                           </div>
@@ -141,12 +150,12 @@ function TenderPage() {
                     ))}
                     {bids.filter((o) => !(skipped[b.id] ?? []).includes(o.carrierId)).length === 0 && (
                       <div className="text-center text-xs text-muted-foreground py-6 border-2 border-dashed border-border rounded-lg">
-                        All bids dismissed on this tender
+                        All offers dismissed on this tender
                       </div>
                     )}
                     {aw && (
                       <div className="mt-2 p-2 bg-[var(--surface-2)] border border-[var(--accent-lime)]/30 rounded-md text-xs text-center font-mono text-[var(--accent-lime)]">
-                        ✓ Tender awarded — carrier notified, contract pending signature
+                        ✓ Tender awarded — carrier notified via automated email, contract pending signature
                       </div>
                     )}
                   </div>

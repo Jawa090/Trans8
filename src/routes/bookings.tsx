@@ -49,7 +49,14 @@ function BookingsPage() {
             const Icon = ICON[b.type];
             return (
               <TR key={b.id} className="cursor-pointer" {...{ onClick: () => setDrawer(b) }}>
-                <TD className="font-mono text-xs text-primary">{b.id}</TD>
+                <TD className="font-mono text-xs text-primary">
+                  <div>{b.id}</div>
+                  {b.hsCode && (
+                    <div className="text-[9px] text-muted-foreground bg-[var(--surface-3)] px-1 py-0.5 rounded border border-border inline-block mt-0.5">
+                      HS {b.hsCode}
+                    </div>
+                  )}
+                </TD>
                 <TD><span className="inline-flex items-center gap-1.5 text-xs font-mono uppercase"><Icon className="h-3.5 w-3.5 text-primary" />{b.type}</span></TD>
                 <TD className="font-medium">{b.customer}</TD>
                 <TD className="text-sm">{b.driver}</TD>
@@ -82,6 +89,11 @@ function BookingDetail({ b }: { b: Booking }) {
           <div>
             <div className="text-xs font-mono uppercase text-muted-foreground">{b.type} shipment</div>
             <div className="font-display font-bold text-lg">{b.cargo} · {b.weight}</div>
+            {b.hsCode && (
+              <div className="inline-flex items-center gap-1 px-1.5 py-0.5 mt-1 rounded bg-primary/10 border border-primary/20 text-[10px] font-mono text-primary font-semibold">
+                HS CODE: {b.hsCode}
+              </div>
+            )}
           </div>
         </div>
         <StatusBadge status={b.status} />

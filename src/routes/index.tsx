@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Panel, PageHeader, StatusBadge, Btn, Avatar, Table, THead, TH, TR, TD, Drawer } from "@/components/admin/ui";
-import { Users, Truck, DollarSign, MapPin, ArrowUpRight, Star, Check, X, ShieldCheck } from "lucide-react";
+import { Users, Truck, DollarSign, MapPin, ArrowUpRight, Star, Check, X, ShieldCheck, Plus, ClipboardList, UserCheck, AlertCircle, Clock, Trash2 } from "lucide-react";
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid,
   PieChart, Pie, Cell,
@@ -45,6 +45,10 @@ function Dashboard() {
   const [txnsDb, setTxnsDb] = useState<any[]>([]);
   const [txnDrawer, setTxnDrawer] = useState<any | null>(null);
 
+  const [tasks, setTasks] = useState<any[]>([]);
+  const [newTaskOpen, setNewTaskOpen] = useState(false);
+  const [taskForm, setTaskForm] = useState({ title: "", assigneeId: "", priority: "Medium" });
+
   useEffect(() => {
     // Users database
     const storedUsers = localStorage.getItem("trans8_users_database_persistent");
@@ -71,6 +75,73 @@ function Dashboard() {
       setTxnsDb(TRANSACTIONS);
     }
   }, []);
+
+  useEffect(() => {
+    const DEFAULT_TASKS = [
+      { id: "TSK-102", title: "Customs clearance audit for Booking #B-91023 (HS Code 8517.12)", assignee: "Sara Karimi", assigneeRole: "Custom Agent", priority: "High", status: "Pending Audit", supervisor: "Compliance Lead" },
+      { id: "TSK-103", title: "Verify container seal and weights at Jebel Ali terminal yard", assignee: "Layla Volkov", assigneeRole: "Port Agent", priority: "Medium", status: "In Progress", supervisor: "Operations Supervisor" },
+      { id: "TSK-104", title: "Inspect reefer temperature log for regional dairy cargo", assignee: "Yusuf Kaya", assigneeRole: "Warehouse Agent", priority: "High", status: "Pending", supervisor: "Warehouse Supervisor" },
+      { id: "TSK-105", title: "Review carrier insurance certificate compliance for tender pool", assignee: "Nadia Karimi", assigneeRole: "Broker Agent", priority: "Low", status: "Completed", supervisor: "Relationship Manager" }
+    ];
+    const storedTasks = localStorage.getItem("trans8_supervisor_tasks");
+    if (storedTasks) {
+      try {
+        setTasks(JSON.parse(storedTasks));
+      } catch (e) {
+        setTasks(DEFAULT_TASKS);
+      }
+    } else {
+      setTasks(DEFAULT_TASKS);
+      localStorage.setItem("trans8_supervisor_tasks", JSON.stringify(DEFAULT_TASKS));
+    }
+  }, []);
+
+  const saveTasks = (newTasks: any[]) => {
+    setTasks(newTasks);
+    localStorage.setItem("trans8_supervisor_tasks", JSON.stringify(newTasks));
+  };
+
+  const handleCreateTask = () => {
+    if (!taskForm.title.trim()) {
+      toast.error("Task title is required");
+      return;
+    }
+    if (!taskForm.assigneeId) {
+      toast.error("Assignee agent is required");
+      return;
+    }
+    const agent = usersDb.find((u) => u.id === taskForm.assigneeId);
+    if (!agent) {
+      toast.error("Selected agent not found");
+      return;
+    }
+    const newTask = {
+      id: `TSK-${Math.floor(100 + Math.random() * 900)}`,
+      title: taskForm.title,
+      assignee: agent.name,
+      assigneeRole: agent.role,
+      priority: taskForm.priority,
+      status: "Pending",
+      supervisor: "Command Center Supervisor",
+    };
+    const updated = [newTask, ...tasks];
+    saveTasks(updated);
+    toast.success(`Task ${newTask.id} successfully assigned to ${agent.name}`);
+    setTaskForm({ title: "", assigneeId: "", priority: "Medium" });
+    setNewTaskOpen(false);
+  };
+
+  const handleUpdateTaskStatus = (id: string, newStatus: string) => {
+    const updated = tasks.map((t) => (t.id === id ? { ...t, status: newStatus } : t));
+    saveTasks(updated);
+    toast.success(`Task status updated to ${newStatus}`);
+  };
+
+  const handleDeleteTask = (id: string) => {
+    const updated = tasks.filter((t) => t.id !== id);
+    saveTasks(updated);
+    toast.info(`Task ${id} removed`);
+  };
 
   const handleApprove = (id: string) => {
     const updated = usersDb.map((u) => u.id === id ? { ...u, status: "Active", kycStatus: "Verified", complianceApproved: true } : u);
@@ -333,6 +404,180 @@ function Dashboard() {
                 <div className="text-[10px] font-mono uppercase text-muted-foreground">users</div>
               </div>
             ))}
+          </div>
+        </Panel>
+      </div>
+
+      {/* Row 5: Supervisor-to-Agent Task Assignment Widget */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-6 font-sans">
+        <Panel
+          title="Supervisor-to-Agent Task Board"
+          className="lg:col-span-2"
+          action={
+            <Btn onClick={() => setNewTaskOpen(true)} className="flex items-center gap-1 h-8 text-xs py-1">
+              <Plus className="h-3 w-3" /> Assign Task
+            </Btn>
+          }
+        >
+          {newTaskOpen && (
+            <div className="mb-5 p-4 bg-[var(--surface-2)] border border-border rounded-lg space-y-3 animate-fadeIn">
+              <div className="text-xs font-mono uppercase text-primary">Assign New Logistics Task</div>
+              <div className="grid sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-mono uppercase text-muted-foreground">Task Title</label>
+                  <input
+                    type="text"
+                    value={taskForm.title}
+                    onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })}
+                    placeholder="e.g., Audit Customs for Booking #B-9102"
+                    className="w-full bg-[var(--surface-3)] border border-border rounded px-3 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-mono uppercase text-muted-foreground">Assignee (Agent)</label>
+                  <select
+                    value={taskForm.assigneeId}
+                    onChange={(e) => setTaskForm({ ...taskForm, assigneeId: e.target.value })}
+                    className="w-full bg-[var(--surface-3)] border border-border rounded px-3 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary"
+                  >
+                    <option value="">Select Agent...</option>
+                    {usersDb
+                      .filter((u) => u.role.includes("Agent") || u.role === "Agent")
+                      .map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {u.name} ({u.role})
+                        </option>
+                      ))}
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-mono uppercase text-muted-foreground">Priority</label>
+                  <select
+                    value={taskForm.priority}
+                    onChange={(e) => setTaskForm({ ...taskForm, priority: e.target.value })}
+                    className="w-full bg-[var(--surface-3)] border border-border rounded px-3 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary"
+                  >
+                    <option value="High">High</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Low">Low</option>
+                  </select>
+                </div>
+                <div className="flex items-end gap-2">
+                  <Btn className="flex-1 h-8 text-xs py-1" onClick={handleCreateTask}>Create</Btn>
+                  <Btn variant="ghost" className="h-8 text-xs py-1" onClick={() => setNewTaskOpen(false)}>Cancel</Btn>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="overflow-x-auto">
+            <Table>
+              <THead>
+                <TR>
+                  <TH>ID</TH>
+                  <TH>Task Description</TH>
+                  <TH>Assignee</TH>
+                  <TH>Priority</TH>
+                  <TH>Status</TH>
+                  <TH className="text-right">Actions</TH>
+                </TR>
+              </THead>
+              <tbody>
+                {tasks.map((task) => (
+                  <TR key={task.id}>
+                    <TD className="font-mono text-xs text-primary">{task.id}</TD>
+                    <TD className="font-medium text-xs max-w-[240px] truncate" title={task.title}>{task.title}</TD>
+                    <TD className="text-xs">
+                      <div className="font-semibold">{task.assignee}</div>
+                      <div className="text-[10px] font-mono text-muted-foreground">{task.assigneeRole}</div>
+                    </TD>
+                    <TD>
+                      <span className={`text-[10px] font-mono px-2 py-0.5 rounded font-bold ${
+                        task.priority === "High" ? "bg-[var(--danger)]/15 text-[var(--danger)]" :
+                        task.priority === "Medium" ? "bg-[var(--warning)]/15 text-[var(--warning)]" :
+                        "bg-primary/15 text-primary"
+                      }`}>
+                        {task.priority}
+                      </span>
+                    </TD>
+                    <TD>
+                      <span className={`text-[10px] font-mono px-2 py-0.5 rounded font-bold ${
+                        task.status === "Completed" ? "bg-[var(--accent-lime)]/15 text-[var(--accent-lime)]" :
+                        task.status === "Pending Audit" ? "bg-amber-500/15 text-amber-500" :
+                        task.status === "In Progress" ? "bg-blue-500/15 text-blue-500" :
+                        "bg-[var(--surface-3)] text-muted-foreground"
+                      }`}>
+                        {task.status}
+                      </span>
+                    </TD>
+                    <TD className="text-right space-x-1">
+                      {task.status !== "Completed" && (
+                        <button
+                          type="button"
+                          onClick={() => handleUpdateTaskStatus(task.id, task.status === "Pending" ? "In Progress" : task.status === "In Progress" ? "Pending Audit" : "Completed")}
+                          className="px-2 py-1 text-[10px] font-mono rounded bg-primary/10 hover:bg-primary/20 text-primary transition-colors font-bold"
+                        >
+                          {task.status === "Pending" ? "Start" : task.status === "In Progress" ? "Audit" : "Approve"}
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteTask(task.id)}
+                        className="p-1 rounded text-red-500 hover:bg-red-500/10 transition-colors inline-flex items-center"
+                        title="Remove Task"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </TD>
+                  </TR>
+                ))}
+                {tasks.length === 0 && (
+                  <TR>
+                    <TD colSpan={6} className="text-center py-6 text-xs text-muted-foreground font-mono">
+                      No logistics tasks assigned currently.
+                    </TD>
+                  </TR>
+                )}
+              </tbody>
+            </Table>
+          </div>
+        </Panel>
+
+        <Panel title="Agent Live Workload">
+          <div className="space-y-4">
+            <div className="text-xs text-muted-foreground">
+              Real-time operational load balance per category. Supervisors can audit live custom & port agent backlogs.
+            </div>
+            <ul className="space-y-3">
+              {usersDb
+                .filter((u) => u.role.includes("Agent") || u.role === "Agent")
+                .slice(0, 6)
+                .map((agent) => {
+                  const agentTaskCount = tasks.filter((t) => t.assignee === agent.name).length;
+                  const backlogPercentage = Math.min((agentTaskCount / 5) * 100, 100);
+                  return (
+                    <li key={agent.id} className="space-y-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2">
+                          <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent-lime)] animate-pulse" />
+                          <span className="font-medium text-foreground">{agent.name}</span>
+                        </div>
+                        <span className="font-mono text-muted-foreground text-[10px]">
+                          {agentTaskCount} active {agentTaskCount === 1 ? "task" : "tasks"}
+                        </span>
+                      </div>
+                      <div className="h-1.5 w-full bg-[var(--surface-3)] rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-500 ${
+                            agentTaskCount >= 3 ? "bg-[var(--danger)]" : agentTaskCount >= 1 ? "bg-primary" : "bg-muted-foreground/30"
+                          }`}
+                          style={{ width: `${backlogPercentage || 5}%` }}
+                        />
+                      </div>
+                    </li>
+                  );
+                })}
+            </ul>
           </div>
         </Panel>
       </div>

@@ -67,6 +67,10 @@ function LoadRequestPage() {
     incoterm: "FOB",
     route: "TR-001 · UAE Local Route",
     notes: "",
+    paymentMethod: "Wallet" as "Wallet" | "Card" | "Wire",
+    cardBrand: "Visa" as "Visa" | "Mastercard" | "Amex",
+    cardholderName: "",
+    wireRef: "",
   });
   const [boe, setBoe] = useState<File | null>(null);
   const [pic, setPic] = useState<File | null>(null);
@@ -128,7 +132,15 @@ function LoadRequestPage() {
       toast.error("Customer name is required");
       return;
     }
-    if (step < 5) setStep(step + 1);
+    if (step === 5 && form.paymentMethod === "Card" && !form.cardholderName.trim()) {
+      toast.error("Cardholder name is required for card payment");
+      return;
+    }
+    if (step === 5 && form.paymentMethod === "Wire" && !form.wireRef.trim()) {
+      toast.error("Wire Transfer reference number is required");
+      return;
+    }
+    if (step < 6) setStep(step + 1);
   };
 
   const prevStep = () => {
@@ -142,7 +154,11 @@ function LoadRequestPage() {
     setSubmitting(true);
     setTimeout(() => {
       setSubmitting(false);
-      toast.success(`Booking created for ${form.customer} · Assigned Agent: ${autoAssignedAgent}`);
+      let msg = `Booking created for ${form.customer} using ${form.paymentMethod} Payment.`;
+      if (form.paymentMethod === "Card") msg += ` (${form.cardBrand})`;
+      toast.success(msg);
+      toast.info(`Assigned Agent: ${autoAssignedAgent}`);
+      
       setForm({
         customer: "",
         country: "UAE",
@@ -154,6 +170,10 @@ function LoadRequestPage() {
         incoterm: "FOB",
         route: "TR-001 · UAE Local Route",
         notes: "",
+        paymentMethod: "Wallet",
+        cardBrand: "Visa",
+        cardholderName: "",
+        wireRef: "",
       });
       setBoe(null);
       setPic(null);
@@ -174,7 +194,8 @@ function LoadRequestPage() {
               { num: 2, label: "Type" },
               { num: 3, label: "Port/Route" },
               { num: 4, label: "Incoterm" },
-              { num: 5, label: "Agent" }
+              { num: 5, label: "Payment" },
+              { num: 6, label: "Agent" }
             ].map((s) => (
               <div key={s.num} className="flex items-center gap-1.5 shrink-0">
                 <div className={`h-7 w-7 rounded-full grid place-items-center text-xs font-mono font-bold transition-colors ${
@@ -183,12 +204,12 @@ function LoadRequestPage() {
                   {step > s.num ? <Check className="h-3.5 w-3.5" /> : s.num}
                 </div>
                 <span className={`text-xs font-medium ${step === s.num ? "text-foreground font-bold" : "text-muted-foreground"}`}>{s.label}</span>
-                {s.num < 5 && <div className="h-px w-6 sm:w-10 bg-border mx-1" />}
+                {s.num < 6 && <div className="h-px w-6 sm:w-10 bg-border mx-1" />}
               </div>
             ))}
           </div>
           <div className="text-xs font-mono text-muted-foreground">
-            Step {step} of 5
+            Step {step} of 6
           </div>
         </div>
       </div>
@@ -353,9 +374,84 @@ function LoadRequestPage() {
             </Panel>
           )}
 
-          {/* STEP 5: AGENT AUTO ASSIGNED */}
+          {/* STEP 5: PAYMENT METHOD */}
           {step === 5 && (
-            <Panel title="Step 5: Agent Auto-Assignment & Summary">
+            <Panel title="Step 5: Select Payment Method">
+              <div className="space-y-6">
+                <Field label="Choose Payment Option">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {[
+                      { type: "Wallet" as const, name: "Wallet Payment", desc: "Pay using Operating Wallet" },
+                      { type: "Card" as const, name: "Credit/Debit Card", desc: "Visa, Mastercard, AMEX" },
+                      { type: "Wire" as const, name: "Bank Wire Transfer", desc: "Direct swift settlement" },
+                    ].map((p) => (
+                      <button key={p.type} type="button" onClick={() => set("paymentMethod", p.type)}
+                        className={`p-3.5 rounded-md border text-left flex flex-col gap-1 transition-all ${
+                          form.paymentMethod === p.type ? "border-primary bg-primary/10 text-foreground ring-1 ring-primary" : "border-border hover:bg-[var(--surface-2)] text-muted-foreground"
+                        }`}>
+                        <span className="font-semibold text-sm text-foreground">{p.name}</span>
+                        <span className="text-[10px] text-muted-foreground">{p.desc}</span>
+                      </button>
+                    ))}
+                  </div>
+                </Field>
+
+                {form.paymentMethod === "Wallet" && (
+                  <div className="p-4 bg-[var(--surface-2)] border border-border rounded-lg space-y-2 animate-fadeIn">
+                    <div className="text-xs font-mono uppercase text-muted-foreground">Operating Wallet Ledger</div>
+                    <div className="text-sm font-semibold text-foreground">TRANS8 Wallet (Default Account)</div>
+                    <div className="text-xs text-muted-foreground">Available balance: <span className="font-mono text-[var(--accent-lime)] font-bold">$12,450.00</span></div>
+                    <div className="text-[10px] bg-primary/10 border border-primary/20 text-primary px-2 py-0.5 rounded inline-block mt-1 font-mono">
+                      Real-time Settle Verification: ACTIVE ✓
+                    </div>
+                  </div>
+                )}
+
+                {form.paymentMethod === "Card" && (
+                  <div className="p-4 bg-[var(--surface-2)] border border-border rounded-lg space-y-4 animate-fadeIn">
+                    <div className="text-xs font-mono uppercase text-muted-foreground">Card Brand Sub-options</div>
+                    <div className="flex gap-2">
+                      {(["Visa", "Mastercard", "Amex"] as const).map((brand) => (
+                        <button key={brand} type="button" onClick={() => set("cardBrand", brand)}
+                          className={`px-3 py-1.5 rounded-md text-xs font-mono uppercase border transition-all ${form.cardBrand === brand ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:bg-[var(--surface-3)]"}`}>
+                          {brand}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+                      <Field label="Cardholder Name">
+                        <Input value={form.cardholderName} onChange={(e) => set("cardholderName", e.target.value)} placeholder="e.g. John Doe" className="w-full" />
+                      </Field>
+                      <Field label="Card Number">
+                        <Input placeholder="•••• •••• •••• ••••" className="w-full" disabled />
+                      </Field>
+                    </div>
+                  </div>
+                )}
+
+                {form.paymentMethod === "Wire" && (
+                  <div className="p-4 bg-[var(--surface-2)] border border-border rounded-lg space-y-3 animate-fadeIn">
+                    <div className="text-xs font-mono uppercase text-muted-foreground">Corporate Wire Transfer Details</div>
+                    <div className="text-xs space-y-1 text-muted-foreground font-mono">
+                      <div>Bank Name: <span className="text-foreground font-semibold">TRANS8 LOGISTICS ESCROW BANK</span></div>
+                      <div>IBAN: <span className="text-foreground font-semibold">AE49 0029 3049 1028 3094</span></div>
+                      <div>Swift Code: <span className="text-foreground font-semibold">TRNS8AE2D</span></div>
+                    </div>
+                    <Field label="Wire Reference No. / Swift Transaction ID">
+                      <Input value={form.wireRef} onChange={(e) => set("wireRef", e.target.value)} placeholder="e.g. SWIFT-829103-X" className="w-full" />
+                    </Field>
+                    <div className="text-[10px] text-primary bg-primary/10 border border-primary/20 p-2 rounded">
+                      Note: Please upload the SWIFT receipt copy under <strong>Evidence Attachments</strong> in the sidebar.
+                    </div>
+                  </div>
+                )}
+              </div>
+            </Panel>
+          )}
+
+          {/* STEP 6: AGENT AUTO ASSIGNED */}
+          {step === 6 && (
+            <Panel title="Step 6: Agent Auto-Assignment & Summary">
               <div className="space-y-5">
                 <div className="p-4 bg-primary/10 border border-primary/30 rounded-lg flex items-start gap-4">
                   <div className="h-10 w-10 rounded-full bg-primary grid place-items-center font-bold text-lg text-primary-foreground font-display">
@@ -397,6 +493,14 @@ function LoadRequestPage() {
                       <dt className="text-[10px] font-mono uppercase text-muted-foreground">Load Type</dt>
                       <dd className="font-semibold">{form.loadType}</dd>
                     </div>
+                    <div>
+                      <dt className="text-[10px] font-mono uppercase text-muted-foreground">Payment Selected</dt>
+                      <dd className="font-semibold font-mono text-[var(--accent-lime)]">
+                        {form.paymentMethod === "Wallet" && "Wallet Payment"}
+                        {form.paymentMethod === "Card" && `Credit Card (${form.cardBrand})`}
+                        {form.paymentMethod === "Wire" && `Wire Transfer (${form.wireRef})`}
+                      </dd>
+                    </div>
                   </dl>
                 </div>
               </div>
@@ -408,7 +512,7 @@ function LoadRequestPage() {
             <Btn type="button" variant="ghost" onClick={prevStep} disabled={step === 1}>
               <ChevronLeft className="h-4 w-4" /> Back
             </Btn>
-            {step < 5 ? (
+            {step < 6 ? (
               <Btn type="button" onClick={nextStep} className="gap-1.5">
                 Next <ChevronRight className="h-4 w-4" />
               </Btn>
@@ -455,6 +559,7 @@ function LoadRequestPage() {
               <Row k="Destination" v={form.destination} />
               <Row k="Incoterm" v={form.incoterm} />
               <Row k="Load Type" v={form.loadType} />
+              <Row k="Payment Option" v={form.paymentMethod === "Wallet" ? "Wallet" : form.paymentMethod === "Card" ? `Card (${form.cardBrand})` : "Bank Wire"} />
               <Row k="Auto Agent" v={autoAssignedAgent} />
             </dl>
           </Panel>

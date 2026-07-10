@@ -138,13 +138,25 @@ export interface Booking {
   id: string; customer: string; driver: string; type: ShipType; origin: string; destination: string;
   status: BookingStatus; date: string; amount: number; cargo: string; weight: string;
   containerType?: "FCL" | "LCL" | "Bulk"; containerId?: string;
+  hsCode?: string;
 }
+
+const CARGO_HS_CODES: Record<string, string> = {
+  "Electronics": "8517.12",
+  "Textiles": "5208.11",
+  "Machinery": "8471.30",
+  "Food & Beverage": "2202.99",
+  "Auto Parts": "8708.29",
+  "Construction Mat.": "6802.10",
+  "Pharmaceuticals": "3004.90",
+};
 
 export const BOOKINGS: Booking[] = Array.from({ length: 60 }, (_, i) => {
   const type = srand(["Road", "Road", "Road", "Sea", "Air", "Train"] as ShipType[]);
   const status = srand(["Pending", "Confirmed", "In Transit", "In Transit", "Delivered", "Delivered", "Cancelled"] as BookingStatus[]);
   let origin = srand(CITIES); let destination = srand(CITIES);
   while (destination === origin) destination = srand(CITIES);
+  const cargo = srand(["Electronics", "Textiles", "Machinery", "Food & Beverage", "Auto Parts", "Construction Mat.", "Pharmaceuticals"]);
   return {
     id: `BK-${(20418 + i).toString()}`,
     customer: `${srand(FIRST)} ${srand(LAST)}`,
@@ -152,10 +164,11 @@ export const BOOKINGS: Booking[] = Array.from({ length: 60 }, (_, i) => {
     type, status, origin, destination,
     date: `2026-0${Math.floor(seeded() * 6) + 1}-${String(Math.floor(seeded() * 28) + 1).padStart(2, "0")}`,
     amount: Math.floor(seeded() * 18000) + 800,
-    cargo: srand(["Electronics", "Textiles", "Machinery", "Food & Beverage", "Auto Parts", "Construction Mat.", "Pharmaceuticals"]),
+    cargo,
     weight: `${(seeded() * 28 + 0.5).toFixed(1)} t`,
     containerType: type === "Sea" ? srand(["FCL", "LCL", "Bulk"] as const) : undefined,
     containerId: type === "Sea" ? `MSCU-${Math.floor(seeded() * 9000000 + 1000000)}` : undefined,
+    hsCode: CARGO_HS_CODES[cargo] || "8500.00"
   };
 });
 

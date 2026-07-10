@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { PageHeader, StatusBadge, Avatar, Table, THead, TH, TR, TD, Btn, Input, Select, Modal, Field } from "@/components/admin/ui";
 import { USERS, REGIONS } from "@/lib/mock-data";
@@ -14,6 +14,7 @@ export const Route = createFileRoute("/users/customers")({
 const NET_ROLES = ["Logistic Broker", "Port Agent", "Custom Agent", "Logistics Partner"];
 
 function NetworkedUsersPage() {
+  const navigate = useNavigate();
   const seed = useMemo(() => USERS.filter((u) => u.kind === "Networked"), []);
   const [list, setList] = useState(seed);
   const [q, setQ] = useState("");
@@ -62,7 +63,7 @@ function NetworkedUsersPage() {
         <THead><TR><TH>User</TH><TH>Role / Activity</TH><TH>Email</TH><TH>Region / City</TH><TH>Status</TH><TH>Joined</TH></TR></THead>
         <tbody>
           {filtered.map((u) => (
-            <TR key={u.id}>
+            <TR key={u.id} className="cursor-pointer hover:bg-[var(--surface-2)] transition-colors" onClick={() => navigate({ to: "/users", search: { profileId: u.id } as any })}>
               <TD><div className="flex items-center gap-3"><Avatar initials={u.avatar} photo={u.photo} /><div><div className="font-medium">{u.name}</div><div className="text-[11px] font-mono text-muted-foreground">{u.id}</div></div></div></TD>
               <TD>
                 <div className="text-xs font-semibold uppercase font-mono text-primary">{u.role}</div>

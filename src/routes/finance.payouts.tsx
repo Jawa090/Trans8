@@ -1,8 +1,10 @@
-import { useState } from "react";
+
+
+import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { createFileRoute } from "@tanstack/react-router";
 import { AdminLayout } from "@/components/admin/AdminLayout";
-import { PageHeader, Panel, Table, THead, TH, TR, TD, Btn, StatusBadge, Input, Select } from "@/components/admin/ui";
+import { PageHeader, Panel, Table, THead, TH, TR, TD, Btn, StatusBadge, Input, Select, Drawer } from "@/components/admin/ui";
 import { formatMoney } from "@/lib/mock-data";
 import { Search, DollarSign, CheckCircle2, AlertCircle, RefreshCw, XCircle } from "lucide-react";
 import { FinanceTabs } from "./finance";
@@ -35,12 +37,16 @@ function PayoutsPage() {
   const [rows, setRows] = useState<Payout[]>(INITIAL_PAYOUTS);
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [selectedPayout, setSelectedPayout] = useState<Payout | null>(null);
 
-  const filtered = rows.filter((t) => {
-    if (statusFilter && t.status !== statusFilter) return false;
-    if (q && !`${t.id} ${t.agentName} ${t.agentType}`.toLowerCase().includes(q.toLowerCase())) return false;
-    return true;
-  });
+  const filtered = useMemo(() => {
+    return rows.filter((t) => {
+      if (statusFilter && t.status !== statusFilter) return false;
+      if (q && !`${t.id} ${t.agentName} ${t.agentType}`.toLowerCase().includes(q.toLowerCase())) return false;
+      return true;
+    });
+  }, [rows, q, statusFilter]);
 
   const handleApprove = (id: string) => {
     setRows((prev) =>
@@ -69,6 +75,61 @@ function PayoutsPage() {
     }
   };
 
+  const handleBulkApprove = () => {
+    if (selectedIds.length === 0) {
+      toast.error("No payouts selected.");
+      return;
+    }
+
+    let successCount = 0;
+    let usersList = [];
+    const storedUsers = localStorage.getItem("trans8_users_database_persistent");
+    if (storedUsers) {
+      try {
+        usersList = JSON.parse(storedUsers);
+      } catch (e) {}
+    }
+
+    const updatedRows = rows.map((item) => {
+      if (selectedIds.includes(item.id) && item.status === "Pending Approval") {
+        successCount++;
+        // Credit the user's wallet
+        if (usersList.length > 0) {
+          const idx = usersList.findIndex((u: any) => u.name.toLowerCase() === item.agentName.toLowerCase());
+          if (idx !== -1) {
+            usersList[idx].walletBalance = (usersList[idx].walletBalance || 0) + item.amountEarned;
+          }
+        }
+        return { ...item, status: "Paid" as const };
+      }
+      return item;
+    });
+
+    if (usersList.length > 0) {
+      localStorage.setItem("trans8_users_database_persistent", JSON.stringify(usersList));
+    }
+
+    setRows(updatedRows);
+    setSelectedIds([]);
+    toast.success(`Approved ${successCount} payouts and successfully credited user wallets.`);
+  };
+
+  const handleBulkReject = () => {
+    if (selectedIds.length === 0) {
+      toast.error("No payouts selected.");
+      return;
+    }
+    const updatedRows = rows.map((item) => {
+      if (selectedIds.includes(item.id) && item.status === "Pending Approval") {
+        return { ...item, status: "Rejected" as const };
+      }
+      return item;
+    });
+    setRows(updatedRows);
+    setSelectedIds([]);
+    toast.error(`Rejected ${selectedIds.length} payouts.`);
+  };
+
   const handleReject = (id: string) => {
     setRows((prev) =>
       prev.map((item) =>
@@ -95,6 +156,21 @@ function PayoutsPage() {
   const totalPaidAmount = rows
     .filter((r) => r.status === "Paid")
     .reduce((sum, r) => sum + r.amountEarned, 0);
+
+  const isAllSelected = useMemo(() => {
+    const pendings = filtered.filter(f => f.status === "Pending Approval");
+    return pendings.length > 0 && pendings.every(p => selectedIds.includes(p.id));
+  }, [filtered, selectedIds]);
+
+  const handleSelectAllToggle = () => {
+    const pendings = filtered.filter(f => f.status === "Pending Approval");
+    if (isAllSelected) {
+      setSelectedIds(selectedIds.filter(id => !pendings.map(p => p.id).includes(id)));
+    } else {
+      const pendingIds = pendings.map(p => p.id);
+      setSelectedIds(Array.from(new Set([...selectedIds, ...pendingIds])));
+    }
+  };
 
   return (
     <AdminLayout>
@@ -129,9 +205,32 @@ function PayoutsPage() {
         </Select>
       </div>
 
+      {selectedIds.length > 0 && (
+        <div className="flex items-center gap-3 p-3 mb-4 rounded-lg bg-[var(--surface-2)] border border-primary/20 animate-in fade-in">
+          <span className="text-xs font-mono text-muted-foreground">{selectedIds.length} selected for action</span>
+          <Btn className="h-8 py-0 px-3 text-xs" onClick={handleBulkApprove}>
+            Approve Selected
+          </Btn>
+          <Btn variant="danger" className="h-8 py-0 px-3 text-xs" onClick={handleBulkReject}>
+            Reject Selected
+          </Btn>
+          <Btn variant="ghost" className="h-8 py-0 px-2 text-xs" onClick={() => setSelectedIds([])}>
+            Cancel
+          </Btn>
+        </div>
+      )}
+
       <Table>
         <THead>
           <TR>
+            <TH className="w-10">
+              <input
+                type="checkbox"
+                className="accent-[var(--primary)]"
+                checked={isAllSelected}
+                onChange={handleSelectAllToggle}
+              />
+            </TH>
             <TH>Payout ID</TH>
             <TH>Agent / Broker</TH>
             <TH>Agent Type</TH>
@@ -143,14 +242,29 @@ function PayoutsPage() {
         </THead>
         <tbody>
           {filtered.map((t) => (
-            <TR key={t.id}>
+            <TR key={t.id} className="cursor-pointer hover:bg-[var(--surface-2)] transition-colors" onClick={() => setSelectedPayout(t)}>
+              <TD onClick={(e) => e.stopPropagation()}>
+                <input
+                  type="checkbox"
+                  className="accent-[var(--primary)]"
+                  checked={selectedIds.includes(t.id)}
+                  disabled={t.status !== "Pending Approval"}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setSelectedIds([...selectedIds, t.id]);
+                    } else {
+                      setSelectedIds(selectedIds.filter((id) => id !== t.id));
+                    }
+                  }}
+                />
+              </TD>
               <TD className="font-mono text-xs text-primary">{t.id}</TD>
               <TD className="font-semibold text-foreground">{t.agentName}</TD>
               <TD className="text-xs text-muted-foreground font-mono uppercase">{t.agentType}</TD>
               <TD className="font-mono text-xs">{t.date}</TD>
               <TD><StatusBadge status={t.status} /></TD>
               <TD className="text-right font-mono text-[var(--accent-lime)] font-bold">{formatMoney(t.amountEarned)}</TD>
-              <TD className="text-right">
+              <TD className="text-right" onClick={(e) => e.stopPropagation()}>
                 <div className="flex gap-2 justify-end">
                   {t.status === "Pending Approval" && (
                     <>
@@ -164,7 +278,7 @@ function PayoutsPage() {
                   )}
                   {t.status === "Rejected" && (
                     <Btn variant="secondary" className="h-7 px-3 text-xs gap-1" onClick={() => handleResetToPending(t.id)}>
-                      <RefreshCw className="h-3 w-3" /> Reset to Pending
+                      <RefreshCw className="h-3 w-3" /> Reset
                     </Btn>
                   )}
                   {t.status === "Paid" && (
@@ -177,10 +291,62 @@ function PayoutsPage() {
             </TR>
           ))}
           {filtered.length === 0 && (
-            <TR><TD className="text-center text-muted-foreground py-8" colSpan={7}>No payout requests found.</TD></TR>
+            <TR><TD className="text-center text-muted-foreground py-8" colSpan={8}>No payout requests found.</TD></TR>
           )}
         </tbody>
       </Table>
+
+      {/* Selective Transaction Summary Detail Drawer */}
+      <Drawer open={!!selectedPayout} onClose={() => setSelectedPayout(null)} title={selectedPayout ? `Payout Transaction: ${selectedPayout.id}` : ""}>
+        {selectedPayout && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between p-3.5 bg-[var(--surface-2)] border border-border rounded-lg">
+              <div>
+                <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Payout Recipient</span>
+                <h4 className="text-lg font-bold text-foreground mt-0.5">{selectedPayout.agentName}</h4>
+                <span className="text-[11px] font-mono text-primary uppercase">{selectedPayout.agentType}</span>
+              </div>
+              <StatusBadge status={selectedPayout.status} />
+            </div>
+
+            <Panel title="Transaction Summary">
+              <div className="space-y-3.5 text-xs">
+                <div className="flex justify-between py-1.5 border-b border-border/40">
+                  <span className="text-muted-foreground">User / Agent Name</span>
+                  <span className="font-semibold text-foreground">{selectedPayout.agentName}</span>
+                </div>
+                <div className="flex justify-between py-1.5 border-b border-border/40">
+                  <span className="text-muted-foreground">Settlement Amount</span>
+                  <span className="font-mono text-sm font-bold text-[var(--accent-lime)]">{formatMoney(selectedPayout.amountEarned)}</span>
+                </div>
+                <div className="flex justify-between py-1.5 border-b border-border/40">
+                  <span className="text-muted-foreground">Transaction ID</span>
+                  <span className="font-mono text-primary font-semibold">{selectedPayout.id}</span>
+                </div>
+                <div className="flex justify-between py-1.5 border-b border-border/40">
+                  <span className="text-muted-foreground">Generated Date</span>
+                  <span className="font-mono text-foreground">{selectedPayout.date}</span>
+                </div>
+                <div className="flex justify-between py-1.5">
+                  <span className="text-muted-foreground">Transfer Destination</span>
+                  <span className="text-[10px] bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded font-mono font-semibold uppercase">CREDIT WALLET</span>
+                </div>
+              </div>
+            </Panel>
+
+            <div className="pt-2 text-xs text-muted-foreground leading-relaxed bg-[var(--surface-2)] border border-border rounded-md p-3">
+              <strong>Compliance Notice:</strong> Payout approvals will instantly transfer the designated amount of <strong>{formatMoney(selectedPayout.amountEarned)}</strong> to the user's primary operating wallet balance, making funds available for immediate utilization.
+            </div>
+
+            <div className="pt-3 border-t border-border flex justify-end gap-2">
+              <Btn variant="secondary" onClick={() => setSelectedPayout(null)}>Close Summary</Btn>
+              {selectedPayout.status === "Pending Approval" && (
+                <Btn onClick={() => { handleApprove(selectedPayout.id); setSelectedPayout(null); }}>Approve Settlement</Btn>
+              )}
+            </div>
+          </div>
+        )}
+      </Drawer>
     </AdminLayout>
   );
 }

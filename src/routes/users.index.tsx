@@ -131,6 +131,13 @@ function UsersPage() {
     } else {
       initDefaultUsers();
     }
+    
+    // Check for query parameter profileId to automatically display the profile detail
+    const params = new URLSearchParams(window.location.search);
+    const profId = params.get("profileId");
+    if (profId) {
+      setSelectedProfileId(profId);
+    }
   }, []);
 
   const initDefaultUsers = () => {
