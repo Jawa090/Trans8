@@ -7,7 +7,7 @@ import { BOOKINGS, USERS, formatMoney } from "@/lib/mock-data";
 import { Truck, Clock, Award, Users, Gavel } from "lucide-react";
 
 export const Route = createFileRoute("/operations/bids")({
-  head: () => ({ meta: [{ title: "Tender — TRANS8" }] }),
+  head: () => ({ meta: [{ title: "Tenders — TRANS8" }] }),
   component: TenderPage,
 });
 
@@ -59,7 +59,7 @@ const AWARDED_HISTORY: { id: string; load: string; carrier: string; amount: numb
 ];
 
 function TenderPage() {
-  const [tab, setTab] = useState("Open");
+  const [tab, setTab] = useState("Open Tenders");
   const loads = useMemo(() => BOOKINGS.filter((b) => b.status === "Pending"), []);
   const [awarded, setAwarded] = useState<Record<string, string>>({});
   const [skipped, setSkipped] = useState<Record<string, string[]>>({});
@@ -74,20 +74,20 @@ function TenderPage() {
   return (
     <AdminLayout>
       <PageHeader
-        title="Tender Management"
-        subtitle={`${stats.open} open pools · ${stats.activeBidders} active bids · ${stats.awarded} awarded this month`}
+        title="Tender & Bidding Operations"
+        subtitle={`${stats.open} active pools · ${stats.activeBidders} competitive bids · ${stats.awarded} finalized contracts`}
       />
 
-      <Tabs tabs={["Open Bids", "Awarded History"]} active={tab} onChange={setTab} />
+      <Tabs tabs={["Open Tenders", "Awarded History"]} active={tab} onChange={setTab} />
 
-      {tab === "Open Bids" && (
+      {tab === "Open Tenders" && (
         <>
           {/* Stats row */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
             <Stat icon={Gavel} label="Open Pools" value={String(stats.open)} />
-            <Stat icon={Users} label="Active Bidders" value={String(stats.activeBidders)} />
+            <Stat icon={Users} label="Active Tenders" value={String(stats.activeBidders)} />
             <Stat icon={Award} label="Awarded" value={String(stats.awarded)} />
-            <Stat icon={Clock} label="Avg Bid" value={formatMoney(Math.round(stats.avgBid))} />
+            <Stat icon={Clock} label="Avg Tender" value={formatMoney(Math.round(stats.avgBid))} />
           </div>
 
           <div className="space-y-5">
@@ -96,14 +96,14 @@ function TenderPage() {
               const bids = generateBids(b.amount, seed);
               const aw = awarded[b.id];
               return (
-                <Panel key={b.id} title={<><span className="font-mono text-primary">{b.id}</span> · {b.origin} → {b.destination}</>}
+                <Panel key={b.id} title={<><span className="font-mono text-primary">Request No. {b.id}</span> · {b.origin} → {b.destination}</>}
                   action={<StatusBadge status={aw ? "Confirmed" : "Pending"} />}>
                   <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mb-4">
                     <span>{b.cargo}</span>
                     <span className="text-border">|</span>
                     <span className="font-mono">{b.weight}</span>
                     <span className="text-border">|</span>
-                    <span>Target: <span className="font-mono text-[var(--accent-lime)]">{formatMoney(b.amount)}</span></span>
+                    <span>Target Budget: <span className="font-mono text-[var(--accent-lime)]">{formatMoney(b.amount)}</span></span>
                   </div>
                   <div className="space-y-2.5">
                     {bids.filter((o) => !(skipped[b.id] ?? []).includes(o.carrierId)).map((o) => (
@@ -128,11 +128,11 @@ function TenderPage() {
                         ) : (
                           <div className="flex gap-1">
                             <Btn className="h-8 px-3 text-xs" disabled={!!aw}
-                              onClick={() => { setAwarded({ ...awarded, [b.id]: o.carrierId }); toast.success(`Awarded ${b.id} to ${o.carrierName} — $${o.bidAmount.toLocaleString()}`); }}>
+                              onClick={() => { setAwarded({ ...awarded, [b.id]: o.carrierId }); toast.success(`Tender successfully awarded for Request ${b.id} to ${o.carrierName}`); }}>
                               Award
                             </Btn>
                             <Btn variant="ghost" className="h-8 px-2 text-xs" disabled={!!aw}
-                              onClick={() => { setSkipped({ ...skipped, [b.id]: [...(skipped[b.id] ?? []), o.carrierId] }); toast(`Skipped ${o.carrierName}`); }}>
+                              onClick={() => { setSkipped({ ...skipped, [b.id]: [...(skipped[b.id] ?? []), o.carrierId] }); toast(`Tender skipped for ${o.carrierName}`); }}>
                               Skip
                             </Btn>
                           </div>
@@ -166,7 +166,7 @@ function TenderPage() {
                   <Avatar initials={a.carrier.split(" ").map((p) => p[0]).join("").slice(0, 2)} size={36} />
                   <div>
                     <div className="font-medium text-sm">{a.carrier}</div>
-                    <div className="text-[11px] font-mono text-muted-foreground">{a.load} · {a.date}</div>
+                    <div className="text-[11px] font-mono text-muted-foreground">Request No: {a.load} · {a.date}</div>
                   </div>
                 </div>
                 <div className="text-right">

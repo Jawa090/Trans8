@@ -240,7 +240,7 @@ function AgentsPage() {
         {selectedAgent && (
           <div className="space-y-6">
             <div className="flex items-center gap-4 p-4 bg-[var(--surface-2)] border border-border rounded-lg">
-              <Avatar initials={selectedAgent.initials} className="h-16 w-16 text-lg" />
+              <Avatar initials={selectedAgent.initials} size={64} />
               <div>
                 <h3 className="text-lg font-bold text-foreground">{selectedAgent.name}</h3>
                 <p className="text-xs text-muted-foreground font-mono">{selectedAgent.id}</p>

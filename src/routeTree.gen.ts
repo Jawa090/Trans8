@@ -29,7 +29,6 @@ import { Route as UsersTruckOwnersRouteImport } from './routes/users.truck-owner
 import { Route as UsersCustomersRouteImport } from './routes/users.customers'
 import { Route as SettingsRegionsRouteImport } from './routes/settings.regions'
 import { Route as SettingsLanguagesRouteImport } from './routes/settings.languages'
-import { Route as SettingsBillingRouteImport } from './routes/settings.billing'
 import { Route as SettingsAdminsRouteImport } from './routes/settings.admins'
 import { Route as OperationsTripsRouteImport } from './routes/operations.trips'
 import { Route as OperationsLoadsRouteImport } from './routes/operations.loads'
@@ -44,6 +43,7 @@ import { Route as FleetBulkRouteImport } from './routes/fleet.bulk'
 import { Route as FinancePayoutsRouteImport } from './routes/finance.payouts'
 import { Route as FinanceGatewaysRouteImport } from './routes/finance.gateways'
 import { Route as FinanceCommissionRouteImport } from './routes/finance.commission'
+import { Route as FinanceBillingRouteImport } from './routes/finance.billing'
 import { Route as ContentPagesRouteImport } from './routes/content.pages'
 import { Route as ContentNotificationsRouteImport } from './routes/content.notifications'
 import { Route as ContentHelpRouteImport } from './routes/content.help'
@@ -149,11 +149,6 @@ const SettingsLanguagesRoute = SettingsLanguagesRouteImport.update({
   path: '/languages',
   getParentRoute: () => SettingsRoute,
 } as any)
-const SettingsBillingRoute = SettingsBillingRouteImport.update({
-  id: '/billing',
-  path: '/billing',
-  getParentRoute: () => SettingsRoute,
-} as any)
 const SettingsAdminsRoute = SettingsAdminsRouteImport.update({
   id: '/admins',
   path: '/admins',
@@ -224,6 +219,11 @@ const FinanceCommissionRoute = FinanceCommissionRouteImport.update({
   path: '/commission',
   getParentRoute: () => FinanceRoute,
 } as any)
+const FinanceBillingRoute = FinanceBillingRouteImport.update({
+  id: '/billing',
+  path: '/billing',
+  getParentRoute: () => FinanceRoute,
+} as any)
 const ContentPagesRoute = ContentPagesRouteImport.update({
   id: '/content/pages',
   path: '/content/pages',
@@ -262,6 +262,7 @@ export interface FileRoutesByFullPath {
   '/content/help': typeof ContentHelpRoute
   '/content/notifications': typeof ContentNotificationsRoute
   '/content/pages': typeof ContentPagesRoute
+  '/finance/billing': typeof FinanceBillingRoute
   '/finance/commission': typeof FinanceCommissionRoute
   '/finance/gateways': typeof FinanceGatewaysRoute
   '/finance/payouts': typeof FinancePayoutsRoute
@@ -276,7 +277,6 @@ export interface FileRoutesByFullPath {
   '/operations/loads': typeof OperationsLoadsRoute
   '/operations/trips': typeof OperationsTripsRoute
   '/settings/admins': typeof SettingsAdminsRoute
-  '/settings/billing': typeof SettingsBillingRoute
   '/settings/languages': typeof SettingsLanguagesRoute
   '/settings/regions': typeof SettingsRegionsRoute
   '/users/customers': typeof UsersCustomersRoute
@@ -300,6 +300,7 @@ export interface FileRoutesByTo {
   '/content/help': typeof ContentHelpRoute
   '/content/notifications': typeof ContentNotificationsRoute
   '/content/pages': typeof ContentPagesRoute
+  '/finance/billing': typeof FinanceBillingRoute
   '/finance/commission': typeof FinanceCommissionRoute
   '/finance/gateways': typeof FinanceGatewaysRoute
   '/finance/payouts': typeof FinancePayoutsRoute
@@ -314,7 +315,6 @@ export interface FileRoutesByTo {
   '/operations/loads': typeof OperationsLoadsRoute
   '/operations/trips': typeof OperationsTripsRoute
   '/settings/admins': typeof SettingsAdminsRoute
-  '/settings/billing': typeof SettingsBillingRoute
   '/settings/languages': typeof SettingsLanguagesRoute
   '/settings/regions': typeof SettingsRegionsRoute
   '/users/customers': typeof UsersCustomersRoute
@@ -342,6 +342,7 @@ export interface FileRoutesById {
   '/content/help': typeof ContentHelpRoute
   '/content/notifications': typeof ContentNotificationsRoute
   '/content/pages': typeof ContentPagesRoute
+  '/finance/billing': typeof FinanceBillingRoute
   '/finance/commission': typeof FinanceCommissionRoute
   '/finance/gateways': typeof FinanceGatewaysRoute
   '/finance/payouts': typeof FinancePayoutsRoute
@@ -356,7 +357,6 @@ export interface FileRoutesById {
   '/operations/loads': typeof OperationsLoadsRoute
   '/operations/trips': typeof OperationsTripsRoute
   '/settings/admins': typeof SettingsAdminsRoute
-  '/settings/billing': typeof SettingsBillingRoute
   '/settings/languages': typeof SettingsLanguagesRoute
   '/settings/regions': typeof SettingsRegionsRoute
   '/users/customers': typeof UsersCustomersRoute
@@ -385,6 +385,7 @@ export interface FileRouteTypes {
     | '/content/help'
     | '/content/notifications'
     | '/content/pages'
+    | '/finance/billing'
     | '/finance/commission'
     | '/finance/gateways'
     | '/finance/payouts'
@@ -399,7 +400,6 @@ export interface FileRouteTypes {
     | '/operations/loads'
     | '/operations/trips'
     | '/settings/admins'
-    | '/settings/billing'
     | '/settings/languages'
     | '/settings/regions'
     | '/users/customers'
@@ -423,6 +423,7 @@ export interface FileRouteTypes {
     | '/content/help'
     | '/content/notifications'
     | '/content/pages'
+    | '/finance/billing'
     | '/finance/commission'
     | '/finance/gateways'
     | '/finance/payouts'
@@ -437,7 +438,6 @@ export interface FileRouteTypes {
     | '/operations/loads'
     | '/operations/trips'
     | '/settings/admins'
-    | '/settings/billing'
     | '/settings/languages'
     | '/settings/regions'
     | '/users/customers'
@@ -464,6 +464,7 @@ export interface FileRouteTypes {
     | '/content/help'
     | '/content/notifications'
     | '/content/pages'
+    | '/finance/billing'
     | '/finance/commission'
     | '/finance/gateways'
     | '/finance/payouts'
@@ -478,7 +479,6 @@ export interface FileRouteTypes {
     | '/operations/loads'
     | '/operations/trips'
     | '/settings/admins'
-    | '/settings/billing'
     | '/settings/languages'
     | '/settings/regions'
     | '/users/customers'
@@ -660,13 +660,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsLanguagesRouteImport
       parentRoute: typeof SettingsRoute
     }
-    '/settings/billing': {
-      id: '/settings/billing'
-      path: '/billing'
-      fullPath: '/settings/billing'
-      preLoaderRoute: typeof SettingsBillingRouteImport
-      parentRoute: typeof SettingsRoute
-    }
     '/settings/admins': {
       id: '/settings/admins'
       path: '/admins'
@@ -765,6 +758,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FinanceCommissionRouteImport
       parentRoute: typeof FinanceRoute
     }
+    '/finance/billing': {
+      id: '/finance/billing'
+      path: '/billing'
+      fullPath: '/finance/billing'
+      preLoaderRoute: typeof FinanceBillingRouteImport
+      parentRoute: typeof FinanceRoute
+    }
     '/content/pages': {
       id: '/content/pages'
       path: '/content/pages'
@@ -797,6 +797,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface FinanceRouteChildren {
+  FinanceBillingRoute: typeof FinanceBillingRoute
   FinanceCommissionRoute: typeof FinanceCommissionRoute
   FinanceGatewaysRoute: typeof FinanceGatewaysRoute
   FinancePayoutsRoute: typeof FinancePayoutsRoute
@@ -804,6 +805,7 @@ interface FinanceRouteChildren {
 }
 
 const FinanceRouteChildren: FinanceRouteChildren = {
+  FinanceBillingRoute: FinanceBillingRoute,
   FinanceCommissionRoute: FinanceCommissionRoute,
   FinanceGatewaysRoute: FinanceGatewaysRoute,
   FinancePayoutsRoute: FinancePayoutsRoute,
@@ -815,7 +817,6 @@ const FinanceRouteWithChildren =
 
 interface SettingsRouteChildren {
   SettingsAdminsRoute: typeof SettingsAdminsRoute
-  SettingsBillingRoute: typeof SettingsBillingRoute
   SettingsLanguagesRoute: typeof SettingsLanguagesRoute
   SettingsRegionsRoute: typeof SettingsRegionsRoute
   SettingsIndexRoute: typeof SettingsIndexRoute
@@ -823,7 +824,6 @@ interface SettingsRouteChildren {
 
 const SettingsRouteChildren: SettingsRouteChildren = {
   SettingsAdminsRoute: SettingsAdminsRoute,
-  SettingsBillingRoute: SettingsBillingRoute,
   SettingsLanguagesRoute: SettingsLanguagesRoute,
   SettingsRegionsRoute: SettingsRegionsRoute,
   SettingsIndexRoute: SettingsIndexRoute,

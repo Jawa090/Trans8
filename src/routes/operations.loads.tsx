@@ -18,18 +18,18 @@ export const Route = createFileRoute("/operations/loads")({
     });
     return (
       <AdminLayout>
-        <PageHeader title="Load Requests" subtitle={`${all.length} requests awaiting carrier assignment`} />
+        <PageHeader title="Tender Requests" subtitle={`${all.length} requests awaiting carrier assignment`} />
         <div className="flex flex-wrap gap-2 mb-4">
           <div className="relative flex-1 min-w-[220px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search ID, customer, cargo, route…" className="w-full pl-9" />
+            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search Request No., customer, cargo, route…" className="w-full pl-9" />
           </div>
           <Select value={type} onChange={(e) => setType(e.target.value)}>
             <option value="">All modes</option><option>Road</option><option>Train</option><option>Air</option><option>Sea</option>
           </Select>
         </div>
         <Table>
-          <THead><TR><TH>ID</TH><TH>Customer</TH><TH>Cargo</TH><TH>Route</TH><TH>Mode</TH><TH>Weight</TH><TH>Posted</TH><TH className="text-right">Budget</TH><TH></TH></TR></THead>
+          <THead><TR><TH>Request No.</TH><TH>Customer</TH><TH>Cargo</TH><TH>Route</TH><TH>Mode</TH><TH>Weight</TH><TH>Posted</TH><TH className="text-right">Budget</TH><TH></TH></TR></THead>
           <tbody>
             {loads.map((b) => (
               <TR key={b.id}>
@@ -42,11 +42,11 @@ export const Route = createFileRoute("/operations/loads")({
                 <TD className="font-mono text-xs">{b.date}</TD>
                 <TD className="text-right font-mono text-[var(--accent-lime)]">{formatMoney(b.amount)}</TD>
                 <TD>
-                  <Link to="/operations/bids" className="text-xs text-primary hover:underline">Open bids →</Link>
+                  <Link to="/operations/bids" className="text-xs text-primary hover:underline">Open Tenders →</Link>
                 </TD>
               </TR>
             ))}
-            {loads.length === 0 && <TR><TD className="text-center text-muted-foreground py-10">No load requests match these filters</TD></TR>}
+            {loads.length === 0 && <TR><TD className="text-center text-muted-foreground py-10">No tender requests match these filters</TD></TR>}
           </tbody>
         </Table>
       </AdminLayout>

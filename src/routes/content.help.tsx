@@ -6,7 +6,7 @@ import { PageHeader, Panel, Btn, Modal, Field, Input } from "@/components/admin/
 
 interface Faq { id: number; q: string; a: string }
 const SEED: Faq[] = [
-  { id: 1, q: "How does the bidding process work for carriers?", a: "Carriers can place bids on open load requests. The admin or customer awards the best bid." },
+  { id: 1, q: "How does the tendering process work for carriers?", a: "Carriers can submit tenders on open tender requests. The admin or customer awards the best tender." },
   { id: 2, q: "What payment methods are supported in UAE?", a: "Stripe, Razorpay, and bank transfer are supported in the UAE region." },
   { id: 3, q: "How are commissions calculated per region?", a: "Commission is configured per region and shipment type in Finance → Commission." },
   { id: 4, q: "Can I track sea freight containers in real-time?", a: "Yes, AIS-based vessel tracking is enabled for FCL and LCL containers." },

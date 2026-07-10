@@ -5,6 +5,7 @@ import { AdminLayout } from "@/components/admin/AdminLayout";
 import { PageHeader, Panel, Table, THead, TH, TR, TD, Btn, StatusBadge, Input, Select } from "@/components/admin/ui";
 import { formatMoney } from "@/lib/mock-data";
 import { Search, DollarSign, CheckCircle2, AlertCircle, RefreshCw, XCircle } from "lucide-react";
+import { FinanceTabs } from "./finance";
 
 export const Route = createFileRoute("/finance/payouts")({
   head: () => ({ meta: [{ title: "Payouts — TRANS8 Admin" }] }),
@@ -48,7 +49,24 @@ function PayoutsPage() {
       )
     );
     const item = rows.find(r => r.id === id);
-    toast.success(`Payout approved and successfully credited to wallet: ${formatMoney(item?.amountEarned || 0)} for ${item?.agentName}`);
+    if (item) {
+      toast.success(`Payout approved and successfully credited to wallet: ${formatMoney(item.amountEarned)} for ${item.agentName}`);
+      // Sync to persistent database
+      try {
+        const storedUsers = localStorage.getItem("trans8_users_database_persistent");
+        if (storedUsers) {
+          const list = JSON.parse(storedUsers);
+          const idx = list.findIndex((u: any) => u.name.toLowerCase() === item.agentName.toLowerCase());
+          if (idx !== -1) {
+            list[idx].walletBalance = (list[idx].walletBalance || 0) + item.amountEarned;
+            localStorage.setItem("trans8_users_database_persistent", JSON.stringify(list));
+            toast.success(`Wallet of ${item.agentName} credited. New Balance: ${formatMoney(list[idx].walletBalance)}`);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to credit wallet:", err);
+      }
+    }
   };
 
   const handleReject = (id: string) => {
@@ -81,6 +99,7 @@ function PayoutsPage() {
   return (
     <AdminLayout>
       <PageHeader title="Payouts" subtitle="Review agent payout requests and manually settle balances" />
+      <FinanceTabs active="payouts" />
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-5">
         <Panel>

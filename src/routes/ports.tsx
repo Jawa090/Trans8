@@ -465,7 +465,7 @@ function PortsPage() {
                 <div>
                   <strong className="text-amber-400">Operational Verification Pending</strong>
                   <p className="text-muted-foreground mt-1">This gateway is newly added and must be audited and verified before domestic routes or container yard transfers are unlocked.</p>
-                  <Btn size="sm" className="mt-3 bg-amber-500 text-black hover:bg-amber-600 gap-1 text-[10px] h-7 px-2" onClick={() => handleVerifyPort(selected.id)}>
+                  <Btn className="mt-3 bg-amber-500 text-black hover:bg-amber-600 gap-1 text-[10px] h-7 px-2" onClick={() => handleVerifyPort(selected.id)}>
                     <ShieldCheck className="h-3.5 w-3.5" /> Verify & Authorize Gateway
                   </Btn>
                 </div>

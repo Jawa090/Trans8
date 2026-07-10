@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Panel, PageHeader, StatusBadge, Btn, Avatar, Table, THead, TH, TR, TD, Drawer } from "@/components/admin/ui";
-import { Users, Truck, DollarSign, MapPin, ArrowUpRight, Star, Check, X } from "lucide-react";
+import { Users, Truck, DollarSign, MapPin, ArrowUpRight, Star, Check, X, ShieldCheck } from "lucide-react";
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid,
   PieChart, Pie, Cell,
@@ -41,11 +41,56 @@ function KPI({ label, value, delta, icon: Icon, accent, to }: { label: string; v
 }
 
 function Dashboard() {
+  const [usersDb, setUsersDb] = useState<any[]>([]);
+  const [txnsDb, setTxnsDb] = useState<any[]>([]);
+  const [txnDrawer, setTxnDrawer] = useState<any | null>(null);
+
+  useEffect(() => {
+    // Users database
+    const storedUsers = localStorage.getItem("trans8_users_database_persistent");
+    if (storedUsers) {
+      try {
+        setUsersDb(JSON.parse(storedUsers));
+      } catch (e) {
+        setUsersDb(USERS);
+      }
+    } else {
+      setUsersDb(USERS);
+      localStorage.setItem("trans8_users_database_persistent", JSON.stringify(USERS));
+    }
+
+    // Transactions database
+    const storedTxns = localStorage.getItem("trans8_transactions_persistent");
+    if (storedTxns) {
+      try {
+        setTxnsDb(JSON.parse(storedTxns));
+      } catch (e) {
+        setTxnsDb(TRANSACTIONS);
+      }
+    } else {
+      setTxnsDb(TRANSACTIONS);
+    }
+  }, []);
+
+  const handleApprove = (id: string) => {
+    const updated = usersDb.map((u) => u.id === id ? { ...u, status: "Active", kycStatus: "Verified", complianceApproved: true } : u);
+    setUsersDb(updated);
+    localStorage.setItem("trans8_users_database_persistent", JSON.stringify(updated));
+    toast.success("User compliance & KYC approved successfully!");
+  };
+
+  const handleReject = (id: string) => {
+    const updated = usersDb.map((u) => u.id === id ? { ...u, status: "Rejected", kycStatus: "Rejected", complianceApproved: false } : u);
+    setUsersDb(updated);
+    localStorage.setItem("trans8_users_database_persistent", JSON.stringify(updated));
+    toast.error("User compliance rejected.");
+  };
+
   const recentBookings = BOOKINGS.slice(0, 6);
-  const topOwners = USERS.filter((u) => u.role === "Driver").slice(0, 5);
-  const [txnDrawer, setTxnDrawer] = useState<(typeof TRANSACTIONS)[number] | null>(null);
-  const recentTxns = TRANSACTIONS.slice(0, 5);
-  const pendingUsers = USERS.filter((u) => u.status === "Pending").slice(0, 4);
+  const topOwners = usersDb.filter((u) => u.role === "Driver" || u.role === "Logistics Partner" || u.walletBalance > 0).slice(0, 5);
+  const recentTxns = txnsDb.slice(0, 5);
+  const pendingUsers = usersDb.filter((u) => u.kycStatus === "Pending" || u.status === "Pending").slice(0, 4);
+  const pendingComplianceCount = usersDb.filter((u) => u.kycStatus === "Pending" || u.status === "Pending").length;
 
   return (
     <AdminLayout>
@@ -59,8 +104,9 @@ function Dashboard() {
       />
 
       {/* KPIs */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
-        <KPI label="Total Users" value="73,610" delta="+12.4%" icon={Users} to="/users" accent />
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4 mb-6">
+        <KPI label="Total Users" value={String(usersDb.length ? usersDb.length.toLocaleString() : "73,610")} delta="+12.4%" icon={Users} to="/users" accent />
+        <KPI label="Pending Compliance" value={String(pendingComplianceCount)} delta="Audit Required" icon={ShieldCheck} to="/users" />
         <KPI label="Active Bookings" value="2,184" delta="+8.1%" icon={Truck} to="/bookings" />
         <KPI label="Total Revenue" value={formatMoney(6128400)} delta="+18.7%" icon={DollarSign} to="/finance" />
         <KPI label="Active Trips" value="412" delta="+3.2%" icon={MapPin} to="/operations/trips" />
@@ -264,10 +310,13 @@ function Dashboard() {
                   <div className="text-sm font-medium truncate">{u.name}</div>
                   <div className="text-[11px] font-mono text-muted-foreground">{u.role} · {u.region}</div>
                 </div>
-                <button className="h-7 w-7 grid place-items-center rounded bg-primary/15 text-[var(--accent-lime)] hover:bg-primary/25 transition-colors"><Check className="h-3.5 w-3.5" /></button>
-                <button className="h-7 w-7 grid place-items-center rounded bg-[var(--danger)]/15 text-[var(--danger)] hover:bg-[var(--danger)]/25 transition-colors"><X className="h-3.5 w-3.5" /></button>
+                <button onClick={() => handleApprove(u.id)} title="Approve Compliance & KYC" className="h-7 w-7 grid place-items-center rounded bg-primary/15 text-[var(--accent-lime)] hover:bg-primary/25 transition-colors"><Check className="h-3.5 w-3.5" /></button>
+                <button onClick={() => handleReject(u.id)} title="Reject compliance verification" className="h-7 w-7 grid place-items-center rounded bg-[var(--danger)]/15 text-[var(--danger)] hover:bg-[var(--danger)]/25 transition-colors"><X className="h-3.5 w-3.5" /></button>
               </li>
             ))}
+            {pendingUsers.length === 0 && (
+              <li className="text-center text-xs text-muted-foreground font-mono py-6">All users are currently compliant.</li>
+            )}
           </ul>
         </Panel>
 

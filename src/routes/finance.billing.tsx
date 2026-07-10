@@ -3,15 +3,15 @@ import { createFileRoute } from "@tanstack/react-router";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { PageHeader, Panel, Table, THead, TH, TR, TD, Btn, Input, StatusBadge, Drawer } from "@/components/admin/ui";
 import { TRANSACTIONS, formatMoney } from "@/lib/mock-data";
-import { SettingsTabs } from "./settings";
-import { Search, Info, Landmark } from "lucide-react";
+import { FinanceTabs } from "./finance";
+import { Search, Info } from "lucide-react";
 
-export const Route = createFileRoute("/settings/billing")({
+export const Route = createFileRoute("/finance/billing")({
   head: () => ({ meta: [{ title: "Billing & Logs — TRANS8" }] }),
-  component: SettingsBillingPage,
+  component: FinanceBillingPage,
 });
 
-function SettingsBillingPage() {
+function FinanceBillingPage() {
   const [q, setQ] = useState("");
   const [selectedTx, setSelectedTx] = useState<(typeof TRANSACTIONS)[number] | null>(null);
 
@@ -25,16 +25,16 @@ function SettingsBillingPage() {
   return (
     <AdminLayout>
       <PageHeader title="Billing & Logs" subtitle="Audit logs of financial gateway transactions and API settlement events" />
-      <SettingsTabs active="billing" />
+      <FinanceTabs active="billing" />
 
       <Panel 
-        title="Transaction History Audit Trail" 
-        action={
-          <div className="relative w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search transaction logs..." className="w-full pl-9" />
-          </div>
-        }
+         title="Transaction History Audit Trail" 
+         action={
+           <div className="relative w-64">
+             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+             <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search transaction logs..." className="w-full pl-9" />
+           </div>
+         }
       >
         <div className="mb-3 text-xs text-muted-foreground flex items-center gap-1">
           <Info className="h-3.5 w-3.5" /> Clicking any Transaction ID links directly to the detailed transaction ledger.

@@ -5,6 +5,7 @@ import { AdminLayout } from "@/components/admin/AdminLayout";
 import { PageHeader, Panel, Btn, Input } from "@/components/admin/ui";
 import { REGIONS } from "@/lib/mock-data";
 import { Percent, Shield, Landmark } from "lucide-react";
+import { FinanceTabs } from "./finance";
 
 const AGENT_TYPES = [
   { key: "logisticBroker", label: "Logistic Broker %" },
@@ -45,6 +46,7 @@ function CommissionSettingsPage() {
   return (
     <AdminLayout>
       <PageHeader title="Commission Settings" subtitle="Configure commission rates for logistics agents and partners by region" />
+      <FinanceTabs active="commission" />
       
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         {REGIONS.map((r) => (

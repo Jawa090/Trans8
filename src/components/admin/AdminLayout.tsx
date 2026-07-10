@@ -18,7 +18,7 @@ const NAV: NavGroup[] = [
   { label: "Overview", items: [{ label: "Dashboard", to: "/", icon: LayoutDashboard }] },
   { label: "Shipments", items: [
     { label: "Shipment Tracking", to: "/tracking", icon: MapPin },
-    { label: "Load Request", to: "/load-request", icon: ClipboardPlus },
+    { label: "New Tender Request", to: "/load-request", icon: ClipboardPlus },
     { label: "Ports", to: "/ports", icon: Anchor },
   ]},
   { label: "Network", items: [
@@ -35,7 +35,7 @@ const NAV: NavGroup[] = [
   { label: "Operations", items: [
     { label: "All Bookings", to: "/bookings", icon: ClipboardList },
     { label: "Active Trips", to: "/operations/trips", icon: RouteIcon },
-    { label: "Load Requests", to: "/operations/loads", icon: PackageSearch },
+    { label: "Tender Requests", to: "/operations/loads", icon: PackageSearch },
     { label: "Tender Management", to: "/operations/bids", icon: Gavel },
   ]},
   { label: "Logistics", items: [

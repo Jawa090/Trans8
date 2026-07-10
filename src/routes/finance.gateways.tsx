@@ -5,6 +5,7 @@ import { PageHeader, Panel, Toggle } from "@/components/admin/ui";
 import { PAYMENT_GATEWAYS } from "@/lib/mock-data";
 import { useState } from "react";
 import { CreditCard } from "lucide-react";
+import { FinanceTabs } from "./finance";
 
 export const Route = createFileRoute("/finance/gateways")({
   head: () => ({ meta: [{ title: "Gateways — Movers Admin" }] }),
@@ -13,6 +14,7 @@ export const Route = createFileRoute("/finance/gateways")({
     return (
       <AdminLayout>
         <PageHeader title="Payment Gateways" subtitle="Per-region gateway availability" />
+        <FinanceTabs active="gateways" />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {gw.map((g, i) => (
             <Panel key={g.name}>

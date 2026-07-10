@@ -82,7 +82,7 @@ function LoadRequestPage() {
         if (next.transport === "Road") {
           next.origin = meta?.cities[0] || "";
           next.destination = meta?.cities[1] || meta?.cities[0] || "";
-        } else if (next.transport === "Train") {
+        } else if (next.transport === "Rail") {
           next.origin = meta?.stations[0] || "";
           next.destination = meta?.stations[1] || meta?.stations[0] || "";
         } else if (next.transport === "Air") {
@@ -99,7 +99,7 @@ function LoadRequestPage() {
         if (v === "Road") {
           next.origin = meta?.cities[0] || "";
           next.destination = meta?.cities[1] || meta?.cities[0] || "";
-        } else if (v === "Train") {
+        } else if (v === "Rail") {
           next.origin = meta?.stations[0] || "";
           next.destination = meta?.stations[1] || meta?.stations[0] || "";
         } else if (v === "Air") {
@@ -275,7 +275,7 @@ function LoadRequestPage() {
                         </Select>
                       </Field>
                     </>
-                  ) : form.transport === "Train" ? (
+                  ) : form.transport === "Rail" ? (
                     <>
                       <Field label="Origin Train Station">
                         <Select value={form.origin} onChange={(e) => set("origin", e.target.value)} className="w-full">

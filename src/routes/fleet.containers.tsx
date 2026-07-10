@@ -543,8 +543,8 @@ function ContainersPage() {
                       placeholder="e.g. Yard C, Section 4" 
                       className="flex-1 text-xs"
                     />
-                    <Btn size="sm" onClick={() => handleUpdateYard(selected.id)}>Save</Btn>
-                    <Btn size="sm" variant="ghost" onClick={() => setEditingYard(false)}>Cancel</Btn>
+                    <Btn onClick={() => handleUpdateYard(selected.id)}>Save</Btn>
+                    <Btn variant="ghost" onClick={() => setEditingYard(false)}>Cancel</Btn>
                   </div>
                 ) : (
                   <div className="flex items-center justify-between">

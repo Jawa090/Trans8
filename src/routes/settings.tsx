@@ -4,13 +4,12 @@ export const Route = createFileRoute("/settings")({
   component: () => <Outlet />,
 });
 
-export function SettingsTabs({ active }: { active: "general" | "regions" | "languages" | "admins" | "billing" }) {
+export function SettingsTabs({ active }: { active: "general" | "regions" | "languages" | "admins" }) {
   const tabs = [
     { id: "general", label: "App Settings", to: "/settings" },
     { id: "regions", label: "Regions", to: "/settings/regions" },
     { id: "languages", label: "Languages", to: "/settings/languages" },
     { id: "admins", label: "Admin Users", to: "/settings/admins" },
-    { id: "billing", label: "Billing & Logs", to: "/settings/billing" },
   ];
   return (
     <div className="border-b border-border flex gap-1 mb-6 overflow-x-auto">
